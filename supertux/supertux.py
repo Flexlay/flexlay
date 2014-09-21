@@ -33,6 +33,9 @@ def main():
                         help="SuperTux data directory directory")
     args = parser.parse_args()
 
+    if args.datadir[-1:] != "/":
+        args.datadir += "/"
+
     print("Datadir:", args.datadir)
 
     flexlay = Flexlay()
