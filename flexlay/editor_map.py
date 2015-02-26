@@ -15,6 +15,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from PyQt4.QtGui import QGraphicsScene
+
 from flexlay import Color, Layer
 from flexlay.math import Rect
 from flexlay.util import Signal
@@ -35,6 +37,7 @@ class EditorMap:
         self.sig_change = Signal()
         self.metadata = None
         self.draw_grid = False
+        self.scene = QGraphicsScene()
 
     def add_layer(self, layer, pos=-1):
         assert pos == -1 or (pos >= 0 and pos < len(self.layers))

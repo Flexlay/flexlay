@@ -18,7 +18,7 @@
 import pickle
 
 from PyQt4.QtGui import (QWidget, QGridLayout, QScrollBar, QTabWidget,
-                         QKeySequence, QShortcut, QCursor)
+                         QKeySequence, QShortcut, QCursor, QGraphicsView)
 from PyQt4.QtCore import Qt
 
 from ..workspace import Workspace
@@ -65,6 +65,8 @@ class EditorMapComponent:
 
         self.sig_drop = Signal()
         self.editormap_widget.sig_drop.connect(self.on_drop)
+
+        self.qgraphicsview = QGraphicsView()
 
     def on_drop(self, data, pos):
         """sends (brush, pos)"""

@@ -16,6 +16,7 @@
 
 
 from .layer import Layer
+from PyQt4.QtGui import QGraphicsScene
 
 
 class ObjectLayer(Layer):
@@ -26,8 +27,32 @@ class ObjectLayer(Layer):
         self.objects = []
         self.control_points = []
 
+        self.scene = QGraphicsScene()
+
     def has_bounding_rect(self):
         return False
+
+    def add_object(self, obj):
+        if self.scene:
+            obj.init_graphics(self.scene)
+        self.objects.append(obj)
+
+    def delete_object(self, obj):
+        if self.scene:
+            obj.deinit_graphics(self.scene)
+        self.objects.remove(obj)
+
+    def delete_objects(self, objs):
+        for obj in objs:
+            if self.scene:
+                obj.deinit_graphics(self.scene)
+            self.objects.remove(obj)
+
+    def add_control_point(self, obj):
+        self.control_points.append(obj)
+
+    def delete_control_points(self):
+        self.control_points.clear()
 
     def draw(self, gc):
         for obj in self.objects:
@@ -50,13 +75,6 @@ class ObjectLayer(Layer):
                 return obj
         return None
 
-    def delete_object(self, obj):
-        self.objects.remove(obj)
-
-    def delete_objects(self, objs):
-        for obj in objs:
-            self.objects.remove(obj)
-
     def get_selection(self, rect):
         selection = []
         for obj in self.objects:
@@ -67,15 +85,6 @@ class ObjectLayer(Layer):
 
     def get_objects(self):
         return self.objects
-
-    def add_object(self, obj):
-        self.objects.append(obj)
-
-    def add_control_point(self, obj):
-        self.control_points.append(obj)
-
-    def delete_control_points(self):
-        self.control_points.clear()
 
     def get_object_index(self, needle):
         for idx, obj in enumerate(self.objects):

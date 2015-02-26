@@ -20,10 +20,10 @@ from PyQt4.QtGui import (QApplication, QMainWindow, QToolBar,
                          QDockWidget, QVBoxLayout, QWidget)
 
 from .config import Config
-from .gui import (ButtonPanel, EditorMapComponent, OpenFileDialog,
-                  SaveFileDialog, GenericDialog, LayerSelector,
-                  Menubar, Minimap, ObjectSelector, TileBrushSelector,
-                  TileSelector, StatusBar)
+from .gui import (ButtonPanel, EditorMapComponent, EditorMapView,
+                  OpenFileDialog, SaveFileDialog, GenericDialog,
+                  LayerSelector, Menubar, Minimap, ObjectSelector,
+                  TileBrushSelector, TileSelector, StatusBar)
 
 
 class FlexlayMainWindow(QMainWindow):

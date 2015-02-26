@@ -15,8 +15,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from PyQt4.QtGui import QPen, QBrush, QPixmap
+
+from flexlay import Colorf, Config
+from flexlay.math import Pointf, Rectf
 from flexlay.util import get_value_from_tree
-from flexlay import Colorf
+
+from .sprite import SuperTuxSprite
+
+import os.path
 
 
 class Property:
@@ -28,12 +35,18 @@ class Property:
         self.default = default
         self.optional = optional
 
-    def read(self, sexpr, obj):
+    def read(self, sexpr):
         self.value = get_value_from_tree([self.identifier, "_"],  sexpr, self.default)
 
-    def write(self, writer, obj):
+    def write(self, writer):
         if not self.optional or self.value != self.default:
             writer.write(self.identifier, self.value)
+
+    def init_graphics(self, scene):
+        pass
+
+    def deinit_graphics(self, scene):
+        pass
 
     def property_dialog(self, dialog):
         pass
@@ -72,10 +85,10 @@ class StringProperty(Property):
         super().__init__(label, identifier, default, optional)
         self.translatable = translatable
 
-    def read(self, sexpr, obj):
+    def read(self, sexpr):
         self.value = get_value_from_tree([self.identifier, "_"],  sexpr, self.default)
 
-    def write(self, writer, obj):
+    def write(self, writer):
         if not self.optional or self.value != self.default:
             writer.write_string(self.identifier, self.value, translatable=self.translatable)
 
@@ -93,14 +106,14 @@ class EnumProperty(Property):
 
         self.values = values
 
-    def read(self, sexpr, obj):
+    def read(self, sexpr):
         value_name = get_value_from_tree([self.identifier, "_"],  sexpr, self.values[self.default])
         try:
             self.value = self.values.index(value_name)
         except:
             raise RuntimeError("%s: invalid enum value: %r not in %r" % (self.identifier, self.value, self.values))
 
-    def write(self, writer, obj):
+    def write(self, writer):
         if not self.optional or self.value != self.default:
             writer.write_string(self.identifier, self.values[self.value])
 
@@ -117,14 +130,14 @@ class DirectionProperty(EnumProperty):
 class InlinePosProperty:
 
     def __init__(self):
-        pass
+        self.pos = Pointf(0, 0)
 
-    def read(self, sexpr, obj):
-        obj.pos.x = get_value_from_tree(["x", "_"],  sexpr, 0.0)
-        obj.pos.y = get_value_from_tree(["y", "_"],  sexpr, 0.0)
+    def read(self, sexpr):
+        self.pos.x = get_value_from_tree(["x", "_"],  sexpr, 0.0)
+        self.pos.y = get_value_from_tree(["y", "_"],  sexpr, 0.0)
 
-    def write(self, writer, obj):
-        writer.write_inline_pointf(obj.pos)
+    def write(self, writer):
+        writer.write_inline_pointf(self.pos)
 
     def property_dialog(self, dialog):
         pass
@@ -133,17 +146,29 @@ class InlinePosProperty:
 class InlineRectProperty:
 
     def __init__(self):
-        pass
+        self.rect_item = None
+        self.rect = Rectf(0, 0, 0, 0)
 
-    def read(self, sexpr, obj):
-        obj.pos.x = get_value_from_tree(["x", "_"],  sexpr, 0.0)
-        obj.pos.y = get_value_from_tree(["y", "_"],  sexpr, 0.0)
-        obj.size.width = get_value_from_tree(["width", "_"],  sexpr, 0.0)
-        obj.size.height = get_value_from_tree(["height", "_"],  sexpr, 0.0)
+    def read(self, sexpr):
+        x = get_value_from_tree(["x", "_"],  sexpr, 0.0)
+        y = get_value_from_tree(["y", "_"],  sexpr, 0.0)
+        width = get_value_from_tree(["width", "_"],  sexpr, 0.0)
+        height = get_value_from_tree(["height", "_"],  sexpr, 0.0)
 
-    def write(self, writer, obj):
-        writer.write_inline_sizef(obj.size)
-        writer.write_inline_pointf(obj.pos)
+        self.rect.left = x
+        self.rect.top = y
+        self.rect.set_size(width, height)
+
+    def write(self, writer):
+        writer.write_inline_sizef(self.rect.size)
+        writer.write_inline_pointf(Pointf(self.rect.left, self.rect.top))
+
+    def init_graphics(self, scene):
+        self.rect_item = scene.addRect(self.rect.to_qt(), QPen(), QBrush())
+
+    def deinit_graphics(self, scene):
+        scene.removeItem(self.rect_item)
+        self.rect_item = None
 
     def property_dialog(self, dialog):
         pass
@@ -151,12 +176,28 @@ class InlineRectProperty:
 
 class SpriteProperty(StringProperty):
 
-    pass
+    def __init__(self):
+        self.pixmap_item = None
+
+    def init_graphics(self, scene):
+        filename = self.value
+
+        sprite = SuperTuxSprite.from_file(os.path.join(Config.current.datadir, filename))
+        pixmap = QPixmap.fromImage(sprite.pixelbuffer.get_qimage())
+        self.pixmap_item = scene.addPixmap(pixmap)
+
+    def deinit_graphics(self, scene):
+        scene.removeItem(self.pixmap_item)
+        self.pixmap_item = None
 
 
 class ImageProperty(StringProperty):
 
-    pass
+    def init_graphics(self, scene):
+        pass
+
+    def deinit_graphics(self, scene):
+        pass
 
 
 class ColorProperty(StringProperty):
@@ -164,10 +205,16 @@ class ColorProperty(StringProperty):
     def __init__(self, label, identifier):
         super().__init__(label, identifier, Colorf())
 
-    def read(self, sexpr, obj):
+    def init_graphics(self, scene):
+        pass
+
+    def deinit_graphics(self, scene):
+        pass
+
+    def read(self, sexpr):
         self.value = Colorf(*get_value_from_tree([self.identifier],  sexpr, [1.0, 1.0, 1.0]))
 
-    def write(self, writer, obj):
+    def write(self, writer):
         writer.write_color(self.identifier, self.value.to_list()[0:3])
 
     def property_dialog(self, dialog):
@@ -191,7 +238,7 @@ class PathProperty:
         self.mode = 2
         self.nodes = []
 
-    def read(self, sexpr, obj):
+    def read(self, sexpr):
         self.nodes = []
 
         sexpr = get_value_from_tree([self.identifier], sexpr, [])
@@ -209,7 +256,7 @@ class PathProperty:
             else:
                 raise RuntimeError("unknown tag %r" % node[0])
 
-    def write(self, writer, obj):
+    def write(self, writer):
         if self.nodes:
             writer.begin_list("path")
             if self.mode != 2:

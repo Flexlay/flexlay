@@ -73,6 +73,14 @@ class GameObj:
             prop.write(writer, obj)
         writer.end_list()
 
+    def init_graphics(self, scene):
+        for prop in self.properties:
+            prop.init_graphics(scene)
+
+    def deinit_graphics(self, scene):
+        for prop in self.properties:
+            prop.init_graphics(scene)
+
     def property_dialog(self, gui):
         dialog = gui.create_generic_dialog("SecretArea Property Dialog")
         for prop in self.properties:

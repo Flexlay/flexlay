@@ -31,14 +31,15 @@ from .tile_selection import TileSelection
 from .tile_selector import TileSelector
 from .tile_selector_widget import TileSelectorWidget
 from .editor_map_component import EditorMapComponent
+from .editor_map_view import EditorMapView
 from .editor_map_widget import EditorMapWidget
 from .statusbar import StatusBar
 
 
 __all__ = ["ButtonPanel", "ColorPicker", "EditorMapComponent",
-           "EditorMapWidget", "OpenFileDialog", "SaveFileDialog",
-           "GenericDialog", "Icon", "LayerSelector", "Menubar",
-           "Minimap", "MinimapWidget", "ObjectSelector",
+           "EditorMapView", "EditorMapWidget", "OpenFileDialog",
+           "SaveFileDialog", "GenericDialog", "Icon", "LayerSelector",
+           "Menubar", "Minimap", "MinimapWidget", "ObjectSelector",
            "ObjectSelectorWidget", "TileBrushSelector",
            "TileSelector", "TileSelection", "TileSelector",
            "TileSelectorWidget", "StatusBar"]

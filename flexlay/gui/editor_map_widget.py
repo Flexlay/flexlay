@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 from PyQt4.QtCore import QSize
 from PyQt4.QtGui import QColor, QPainter
 from PyQt4.QtGui import QSizePolicy, QWidget
