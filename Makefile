@@ -21,11 +21,10 @@ PYLINT_TARGETS := $(addprefix .pylint/, $(SOURCES))
 
 $(PYLINT_TARGETS): .pylint/%.py: %.py
 	mkdir -p $(dir $@)
-	epylint $<
+	PYTHONPATH=. epylint $<
 	touch $@
 
 pylint: $(PYLINT_TARGETS)
-	echo $<
 
 clean:
 	rm -vrf .pylint/

@@ -218,7 +218,7 @@ class InvisibleWall(GameObj):
     def __init__(self):
         super().__init__()
 
-        self.objmap_object = make_rect_object(self, Color(0, 0, 0, 255*0.8))
+        self.objmap_object = make_rect_object(self, Color(0, 0, 0, 255 * 0.8))
 
         self.properties = [
             InlineRectProperty(),
