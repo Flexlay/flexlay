@@ -1,9 +1,9 @@
 # TODO.md — Flexlay C++/Qt port
 
-**Status:** Phase 0 scaffold + math/Color/Field done; simpleed is a Qt shell only.  
+**Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-003.1-cpp-scaffold-math-field-5ef0589.bundle`
+**Current tip bundle:** `flexlay-23.1-tileset-images-crop-5ef0589.bundle`
 
 ---
 
@@ -390,14 +390,29 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - simpleed **File → Open Level…** loads `.stlv`/`.stl` tilemaps (placeholder colors by id)
 - **test_tileset_loader** green
 
+### 2026-10-19 — Real tileset images + sheet crop
+
+- **PixelBuffer::subregion** / **subregion_from_file**
+- **tileset_loader**: bulk `(tiles (ids…) (width N) (image …))` crops
+  `tile_size×tile_size` cells row-major; single tiles support
+  `(region "file" x y w h)`; prefer **editor-images** for editor display
+- **ImageCache** inside one `load_tileset_*` call (sheet loaded once)
+- simpleed **Open Level…**: if `SUPERTUX_DATADIR` is set, loads
+  `$datadir/images/tiles.stts` with `load_images=true` and draws real tiles
+- **test_tileset_loader** covers subregion + region/editor-images parsing
+
 ### Concrete next steps
 
 1. ~~stlv + stts parse + Open Level~~  
-2. Load real tileset images from SuperTux-Origins datadir  
-3. Sheet region crop for bulk (tiles ids + image)  
-4. Game objects as property bags
+2. ~~Load real tileset images from SuperTux-Origins datadir~~  
+3. ~~Sheet region crop for bulk (tiles ids + image)~~  
+4. Tile selector UI (tilegroups from meta)  
+5. Game objects as property bags  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
+
+**How to try images:**  
+`SUPERTUX_DATADIR=/path/to/supertux/data flexlay-simpleed` then File → Open Level on a `.stlv`.
 
 ---
 

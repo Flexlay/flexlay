@@ -35,6 +35,8 @@
 #include <QWidget>
 
 #include <memory>
+#include <cstdlib>
+#include <filesystem>
 #include <random>
 
 int main(int argc, char* argv[])
@@ -220,6 +222,11 @@ int main(int argc, char* argv[])
 
   auto* file_menu = window.menuBar()->addMenu(QStringLiteral("&File"));
   auto* open_act = file_menu->addAction(QStringLiteral("Open Level…"));
+  // SuperTux data root: SUPERTUX_DATADIR env, else empty (placeholders only).
+  // Expected layout: $datadir/images/tiles.stts and $datadir/images/...
+  const char* datadir_env = std::getenv("SUPERTUX_DATADIR");
+  const std::string supertux_datadir = datadir_env ? datadir_env : std::string{};
+
   QObject::connect(open_act, &QAction::triggered, [&]() {
     const QString path = QFileDialog::getOpenFileName(
       &window, QStringLiteral("Open SuperTux Level"),
@@ -229,8 +236,33 @@ int main(int argc, char* argv[])
     }
     try {
       auto level = flexlay::supertux::load_level_file(path.toStdString());
-      // Build a placeholder tileset covering ids seen in the level
-      auto ts = std::make_shared<flexlay::Tileset>(tile_size);
+      std::shared_ptr<flexlay::Tileset> ts;
+      int image_tiles = 0;
+      if (!supertux_datadir.empty()) {
+        const std::string stts = supertux_datadir + "/images/tiles.stts";
+        flexlay::supertux::TilesetLoadOptions opts;
+        opts.datadir = supertux_datadir;
+        opts.tile_size = tile_size;
+        opts.load_images = true;
+        try {
+          auto loaded = flexlay::supertux::load_tileset_file(stts, opts);
+          ts = loaded.first;
+          for (int id : ts->get_tiles()) {
+            if (ts->create(id).has_image()) {
+              ++image_tiles;
+            }
+          }
+        } catch (const std::exception& tex) {
+          QMessageBox::warning(&window, QStringLiteral("Tileset"),
+                               QStringLiteral("Failed to load %1:\n%2")
+                                 .arg(QString::fromStdString(stts))
+                                 .arg(QString::fromUtf8(tex.what())));
+        }
+      }
+      if (!ts) {
+        ts = std::make_shared<flexlay::Tileset>(tile_size);
+      }
+      // Ensure every id used in the level exists (placeholder if missing).
       for (const auto& tm : level.tilemaps) {
         for (uint32_t id : tm.tiles) {
           if (id != 0 && !ts->has_tile(static_cast<int>(id))) {
@@ -243,30 +275,20 @@ int main(int argc, char* argv[])
       }
       auto new_map = flexlay::supertux::editor_map_from_level(level, ts);
       workspace->set_map(new_map);
-      // Rebind tools to first tilemap layer if present
-      flexlay::TilemapLayer* first_tm = nullptr;
       for (const auto& layer : new_map->layers()) {
-        if (auto* tml = dynamic_cast<flexlay::TilemapLayer*>(layer.get())) {
-          first_tm = tml;
+        auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer);
+        if (tml) {
+          paint_tool->set_tilemap(tml);
+          fill_tool->set_tilemap(tml);
           break;
-        }
-      }
-      if (first_tm) {
-        // tools need shared_ptr — find shared from layers
-        for (const auto& layer : new_map->layers()) {
-          auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer);
-          if (tml) {
-            paint_tool->set_tilemap(tml);
-            fill_tool->set_tilemap(tml);
-            break;
-          }
         }
       }
       map_widget->update();
       window.statusBar()->showMessage(
-        QStringLiteral("Loaded %1 (%2 tilemaps)")
+        QStringLiteral("Loaded %1 (%2 tilemaps, %3 tiles with images)")
           .arg(QString::fromStdString(level.name))
-          .arg(level.tilemaps.size()));
+          .arg(level.tilemaps.size())
+          .arg(image_tiles));
     } catch (const std::exception& ex) {
       QMessageBox::warning(&window, QStringLiteral("Open Level"),
                            QString::fromUtf8(ex.what()));
