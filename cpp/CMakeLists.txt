@@ -1,10 +1,6 @@
 # Flexlay - A Generic 2D Game Editor
 # Copyright (C) 2026 Ingo Ruhnke <grumbel@gmail.com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 cmake_minimum_required(VERSION 3.16)
 project(flexlay VERSION 0.2.0 LANGUAGES CXX)
@@ -19,10 +15,7 @@ option(FLEXLAY_BUILD_SIMPLEED "Build the simpleed demo application" ON)
 add_subdirectory(libflexlay)
 
 if(FLEXLAY_BUILD_SIMPLEED)
-  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
   set(CMAKE_AUTOMOC ON)
-  set(CMAKE_AUTORCC ON)
-  set(CMAKE_AUTOUIC ON)
   add_subdirectory(apps/simpleed)
 endif()
 
