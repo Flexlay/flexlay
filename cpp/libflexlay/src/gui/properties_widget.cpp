@@ -5,6 +5,7 @@
 #include "flexlay/gui/properties_widget.hpp"
 
 #include "flexlay/commands/object_property_command.hpp"
+#include "flexlay/supertux/property_schema.hpp"
 
 #include <QCheckBox>
 #include <QDoubleSpinBox>
@@ -153,10 +154,22 @@ void PropertiesWidget::rebuild_form()
     connect(y_spin, &QDoubleSpinBox::editingFinished, this, apply_pos);
   }
 
-  for (const auto& kv : m_object->properties().values()) {
-    const QString key = QString::fromStdString(kv.first);
-    const PropertyValue& val = kv.second;
-    const std::string key_s = kv.first;
+  // Resolve SuperTux type for schema (prefer props type, else object name)
+  std::string type_id = m_object->name();
+  if (auto t = m_object->properties().get_as<std::string>("type")) {
+    type_id = *t;
+  }
+  supertux::ensure_property_schema(m_object->properties(), type_id);
+
+  const auto display_keys = supertux::property_display_keys(m_object->properties(), type_id);
+  for (const auto& key_s : display_keys) {
+    auto val_opt = m_object->properties().get(key_s);
+    if (!val_opt) {
+      continue;
+    }
+    const PropertyValue& val = *val_opt;
+    const QString key = QString::fromStdString(
+      supertux::property_label(type_id, key_s));
 
     auto commit_prop = [this, key_s](PropertyValue new_v) {
       if (m_block || !m_object) {

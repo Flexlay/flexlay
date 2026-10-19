@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-45.1-toolbar-icons-5ef0589.bundle`
+**Current tip bundle:** `flexlay-46.1-property-schemas-5ef0589.bundle`
 
 ---
 
@@ -585,6 +585,12 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - Load icons from `FLEXLAY_DATADIR` or `./data` (`images/icons24`, `images/tools`)
 - Toolbar: New/Open/Save, Undo/Redo, Paint/Fill/Objects, Grid, Zoom, Raise/Lower, Run
 - Actions share menu handlers
+
+### 2026-10-19 — Per-type property schemas
+
+- `supertux/property_schema`: labels + defaults for common object types
+- Selecting an object fills missing schema keys (does not overwrite)
+- Properties dock uses schema order and human labels; hides internal keys
 
 ### Concrete next steps
 

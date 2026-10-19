@@ -15,6 +15,7 @@ set(FLEXLAY_CORE_SOURCES
   src/supertux/level_loader.cpp
   src/supertux/level_saver.cpp
   src/supertux/object_sprites.cpp
+  src/supertux/property_schema.cpp
   src/supertux/sprite_loader.cpp
   src/supertux/tileset_loader.cpp
   src/commands/paint_command.cpp

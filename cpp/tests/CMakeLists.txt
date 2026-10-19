@@ -53,3 +53,7 @@ add_test(NAME test_object_property_command COMMAND test_object_property_command)
 add_executable(test_sprite_loader test_sprite_loader.cpp)
 target_link_libraries(test_sprite_loader PRIVATE flexlay::flexlay)
 add_test(NAME test_sprite_loader COMMAND test_sprite_loader)
+
+add_executable(test_property_schema test_property_schema.cpp)
+target_link_libraries(test_property_schema PRIVATE flexlay::flexlay)
+add_test(NAME test_property_schema COMMAND test_property_schema)
