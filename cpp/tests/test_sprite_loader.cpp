@@ -68,6 +68,35 @@ int main()
   CHECK(path3.has_value());
   CHECK(*path3 == "/m/only.png");
 
+  // Hitbox + top-level action form (mainline SuperTux)
+  auto def4 = load_sprite_def_text(R"(
+    (supertux-sprite
+      (action
+        (name "left")
+        (hitbox 8 13 32 32)
+        (images "left-0.png")
+      )
+      (action
+        (name "right")
+        (hitbox 8 13 32 32)
+        (images "right-0.png")
+      )
+    )
+  )", "/spr");
+  CHECK(def4.actions.size() == 2);
+  CHECK(def4.actions[0].has_hitbox);
+  CHECK(def4.actions[0].hitbox_x == 8);
+  CHECK(def4.actions[0].hitbox_w == 32);
+  auto hb = preferred_hitbox(def4);
+  CHECK(hb.has_value());
+  CHECK(hb->left == 8);
+  CHECK(hb->top == 13);
+  CHECK(hb->width() == 32.0f);
+  CHECK(hb->height() == 32.0f);
+  auto path4 = preferred_image_path(def4);
+  CHECK(path4.has_value());
+  CHECK(*path4 == "/spr/left-0.png");
+
   std::cout << "test_sprite_loader: ok\n";
   return 0;
 }

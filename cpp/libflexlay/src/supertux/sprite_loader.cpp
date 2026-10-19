@@ -80,6 +80,18 @@ SpriteAction parse_action(const SExpr& node)
   if (!one.empty()) {
     act.images.push_back(one);
   }
+  // (hitbox x y width height) — SuperTux convention
+  const SExpr* hb = find_child(node, "hitbox");
+  if (hb && hb->is_list() && hb->as_list().size() >= 5) {
+    try {
+      act.hitbox_x = std::stof(hb->as_list()[1].as_atom());
+      act.hitbox_y = std::stof(hb->as_list()[2].as_atom());
+      act.hitbox_w = std::stof(hb->as_list()[3].as_atom());
+      act.hitbox_h = std::stof(hb->as_list()[4].as_atom());
+      act.has_hitbox = true;
+    } catch (...) {
+    }
+  }
   return act;
 }
 
@@ -95,10 +107,20 @@ LoadedSpriteDef load_sprite_def_text(const std::string& text, const std::string&
   def.version = child_int(root, "version");
   def.base_dir = base_dir;
 
+  // Nested (actions (action ...) ...) form (tests / some packs)
   const SExpr* actions = find_child(root, "actions");
   if (actions && actions->is_list()) {
     for (size_t i = 1; i < actions->as_list().size(); ++i) {
       const auto& child = actions->as_list()[i];
+      if (child.is_list() && child.tag() == "action") {
+        def.actions.push_back(parse_action(child));
+      }
+    }
+  }
+  // SuperTux-Origins / mainline: (action ...) direct children of root
+  if (root.is_list()) {
+    for (size_t i = 1; i < root.as_list().size(); ++i) {
+      const auto& child = root.as_list()[i];
       if (child.is_list() && child.tag() == "action") {
         def.actions.push_back(parse_action(child));
       }
@@ -150,6 +172,44 @@ std::optional<std::string> preferred_image_path(const LoadedSpriteDef& def)
     }
   }
   return std::nullopt;
+}
+
+
+const SpriteAction* preferred_action(const LoadedSpriteDef& def)
+{
+  auto usable = [&](const SpriteAction& act) -> bool {
+    if (!act.images.empty()) return true;
+    if (!act.mirror_action.empty()) {
+      for (const auto& other : def.actions) {
+        if (other.name == act.mirror_action && !other.images.empty()) return true;
+      }
+    }
+    return act.has_hitbox;
+  };
+  static const char* preferred[] = {"default", "editor", "left", "idle", "normal", "right"};
+  for (const char* want : preferred) {
+    for (const auto& act : def.actions) {
+      if (act.name == want && usable(act)) {
+        return &act;
+      }
+    }
+  }
+  for (const auto& act : def.actions) {
+    if (usable(act)) {
+      return &act;
+    }
+  }
+  return nullptr;
+}
+
+std::optional<Rectf> preferred_hitbox(const LoadedSpriteDef& def)
+{
+  const SpriteAction* act = preferred_action(def);
+  if (!act || !act->has_hitbox) {
+    return std::nullopt;
+  }
+  return Rectf(act->hitbox_x, act->hitbox_y,
+               act->hitbox_x + act->hitbox_w, act->hitbox_y + act->hitbox_h);
 }
 
 std::optional<Sprite> load_sprite_from_def(const std::string& sprite_path)

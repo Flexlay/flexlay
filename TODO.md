@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-41.1-full-object-registry-5ef0589.bundle`
+**Current tip bundle:** `flexlay-42.1-hitbox-placement-5ef0589.bundle`
 
 ---
 
@@ -561,11 +561,17 @@ run-level, sector resize, property dialogs per type, worldmap, …
   (editor images only; no Python runtime)
 - **Layer → Show All / Hide All**
 
+### 2026-10-19 — Hitbox placement guides
+
+- Parse `(hitbox x y w h)` from SuperTux `.sprite` actions
+- Accept top-level `(action …)` (mainline) as well as nested `(actions …)`
+- Place tool: ghost sprite + cyan hitbox overlay at cursor when datadir set
+
 ### Concrete next steps
 
 1. ~~Sector name list / multi-sector support~~  
 2. Animate sprite actions in editor (optional)  
-3. Hitbox-aware placement guides from sprite defs  
+3. ~~Hitbox-aware placement guides from sprite defs~~  
 4. Add/remove/rename sectors in UI  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.

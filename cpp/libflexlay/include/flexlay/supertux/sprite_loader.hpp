@@ -7,10 +7,10 @@
 
 /**
  * Minimal SuperTux (supertux-sprite) loader for the editor.
- * Resolves the first usable action image (prefers default/left/editor)
- * and loads that PNG. Does not animate or mirror-action expand.
+ * Resolves a preferred action image and optional hitbox for placement guides.
  */
 
+#include "flexlay/math/rect.hpp"
 #include "flexlay/sprite.hpp"
 
 #include <optional>
@@ -23,34 +23,34 @@ namespace supertux {
 struct SpriteAction
 {
   std::string name;
-  std::vector<std::string> images; // filenames relative to .sprite directory
-  std::string mirror_action;       // if set, images come from another action
+  std::vector<std::string> images; // relative to .sprite directory
+  std::string mirror_action;
+  /** Hitbox relative to sprite top-left: x, y, width, height. */
+  float hitbox_x = 0;
+  float hitbox_y = 0;
+  float hitbox_w = 0;
+  float hitbox_h = 0;
+  bool has_hitbox = false;
 };
 
 struct LoadedSpriteDef
 {
   int version = 0;
   std::vector<SpriteAction> actions;
-  /** Directory containing the .sprite file (for resolving relative images). */
   std::string base_dir;
 };
 
-/** Parse a .sprite file from disk. Throws on parse/I/O errors. */
 LoadedSpriteDef load_sprite_def_file(const std::string& path);
-
-/** Parse sexpr text; base_dir used only for returned structure. */
 LoadedSpriteDef load_sprite_def_text(const std::string& text, const std::string& base_dir = {});
 
-/**
- * Pick a preferred action's first image path (absolute), if any.
- * Preference order: action named "default", "editor", "left", "idle", "normal", then first with images.
- */
+/** Preferred action (default/editor/left/idle/normal/first with images). */
+const SpriteAction* preferred_action(const LoadedSpriteDef& def);
+
 std::optional<std::string> preferred_image_path(const LoadedSpriteDef& def);
 
-/**
- * Load Sprite from a .sprite path (absolute or relative to cwd).
- * Empty optional if no image resolves.
- */
+/** Hitbox of preferred action in sprite-local coordinates, if present. */
+std::optional<Rectf> preferred_hitbox(const LoadedSpriteDef& def);
+
 std::optional<Sprite> load_sprite_from_def(const std::string& sprite_path);
 
 } // namespace supertux
