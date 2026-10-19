@@ -30,6 +30,10 @@
 
 
 #include <QApplication>
+#include <QAction>
+#include <QActionGroup>
+#include <QKeySequence>
+#include <QToolBar>
 #include <QFileDialog>
 #include <QMenuBar>
 #include <QMessageBox>
@@ -48,6 +52,7 @@
 #include <QVariant>
 
 #include <memory>
+#include <algorithm>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -272,56 +277,125 @@ int main(int argc, char* argv[])
                                              static_cast<float>(map_h * tile_size) / 2.0f));
 
   QMainWindow window;
-  window.setWindowTitle(QStringLiteral("Flexlay Simple Editor (C++)"));
+  // Title: demo vs datadir (matches Python "SuperTux" naming more closely)
+  {
+    QString title = QStringLiteral("SuperTux Editor");
+    if (options.demo) {
+      title += QStringLiteral(" — Demo");
+    }
+    if (!options.datadir.empty()) {
+      title += QStringLiteral(" [%1]").arg(QString::fromStdString(options.datadir));
+    }
+    window.setWindowTitle(title);
+  }
 
   auto* central = new QWidget(&window);
   auto* layout = new QHBoxLayout(central);
-  auto* sidebar = new QWidget(central);
-  auto* side_layout = new QVBoxLayout(sidebar);
-
-  side_layout->addWidget(new QLabel(QStringLiteral("Tool:"), sidebar));
-  auto* paint_btn = new QPushButton(QStringLiteral("Paint tiles"), sidebar);
-  auto* fill_btn = new QPushButton(QStringLiteral("Flood fill"), sidebar);
-  auto* select_btn = new QPushButton(QStringLiteral("Select objects"), sidebar);
-  side_layout->addWidget(paint_btn);
-  side_layout->addWidget(fill_btn);
-  side_layout->addWidget(select_btn);
-  auto* add_rect_btn = new QPushButton(QStringLiteral("Add rect"), sidebar);
-  side_layout->addWidget(add_rect_btn);
-
-  side_layout->addWidget(new QLabel(QStringLiteral("Tile:"), sidebar));
-  auto make_tile_btn = [&](uint32_t id, const QString& label, const QColor& color) {
-    auto* btn = new QPushButton(label, sidebar);
-    btn->setStyleSheet(QStringLiteral("background-color: %1; min-height: 28px;").arg(color.name()));
-    QObject::connect(btn, &QPushButton::clicked, [paint_tool, fill_tool, workspace, id]() {
-      paint_tool->set_tile_id(id);
-      fill_tool->set_tile_id(id);
-      workspace->set_tool(paint_tool);
-    });
-    side_layout->addWidget(btn);
-  };
-  make_tile_btn(0, QStringLiteral("0 Erase"), QColor(40, 40, 40));
-  make_tile_btn(1, QStringLiteral("1 Blue"), QColor(70, 130, 180));
-  make_tile_btn(2, QStringLiteral("2 Green"), QColor(60, 179, 113));
-  make_tile_btn(3, QStringLiteral("3 Red"), QColor(205, 92, 92));
-  make_tile_btn(4, QStringLiteral("4 Yellow"), QColor(238, 221, 130));
-  make_tile_btn(5, QStringLiteral("5 Purple"), QColor(147, 112, 219));
-
-  side_layout->addWidget(new QLabel(QStringLiteral("Brush size:"), sidebar));
-  for (int sz : {1, 2, 3, 5}) {
-    auto* btn = new QPushButton(QString::number(sz), sidebar);
-    QObject::connect(btn, &QPushButton::clicked, [paint_tool, workspace, sz]() {
-      paint_tool->set_brush_size(sz);
-      workspace->set_tool(paint_tool);
-    });
-    side_layout->addWidget(btn);
-  }
-  side_layout->addStretch(1);
-
+  layout->setContentsMargins(0, 0, 0, 0);
   auto* map_widget = new flexlay::EditorMapWidget(central);
   map_widget->set_workspace(workspace);
-  layout->addWidget(sidebar, 0);
   layout->addWidget(map_widget, 1);
+
+  // Toolbar — similar roles to Python SuperTuxButtonPanel / toolbox
+  auto* toolbar = window.addToolBar(QStringLiteral("Main"));
+  toolbar->setObjectName(QStringLiteral("main_toolbar"));
+  toolbar->setMovable(false);
+  auto* tool_group = new QActionGroup(&window);
+  tool_group->setExclusive(true);
+
+  auto* paint_act = toolbar->addAction(QStringLiteral("Paint"));
+  paint_act->setCheckable(true);
+  paint_act->setChecked(true);
+  paint_act->setShortcut(QKeySequence(QStringLiteral("P")));
+  paint_act->setToolTip(QStringLiteral("Paint tiles (P)"));
+  tool_group->addAction(paint_act);
+
+  auto* fill_act = toolbar->addAction(QStringLiteral("Fill"));
+  fill_act->setCheckable(true);
+  fill_act->setShortcut(QKeySequence(QStringLiteral("F")));
+  fill_act->setToolTip(QStringLiteral("Flood fill (F)"));
+  tool_group->addAction(fill_act);
+
+  auto* select_act = toolbar->addAction(QStringLiteral("Objects"));
+  select_act->setCheckable(true);
+  select_act->setShortcut(QKeySequence(QStringLiteral("O")));
+  select_act->setToolTip(QStringLiteral("Select / move objects (O)"));
+  tool_group->addAction(select_act);
+
+  toolbar->addSeparator();
+  auto* grid_act = toolbar->addAction(QStringLiteral("Grid"));
+  grid_act->setCheckable(true);
+  grid_act->setChecked(true);
+  grid_act->setShortcut(QKeySequence(QStringLiteral("G")));
+  grid_act->setToolTip(QStringLiteral("Toggle tile grid (G)"));
+
+  toolbar->addSeparator();
+  auto* zoom_in_act = toolbar->addAction(QStringLiteral("Zoom+"));
+  auto* zoom_out_act = toolbar->addAction(QStringLiteral("Zoom-"));
+  auto* zoom_1_act = toolbar->addAction(QStringLiteral("1:1"));
+  auto* zoom_fit_act = toolbar->addAction(QStringLiteral("Fit"));
+  zoom_1_act->setToolTip(QStringLiteral("Zoom 100%"));
+  zoom_fit_act->setToolTip(QStringLiteral("Zoom to fit level"));
+
+  toolbar->addSeparator();
+  for (int sz : {1, 2, 3, 5}) {
+    auto* brush_act = toolbar->addAction(QStringLiteral("Brush %1").arg(sz));
+    QObject::connect(brush_act, &QAction::triggered, [paint_tool, workspace, paint_act, sz]() {
+      paint_tool->set_brush_size(sz);
+      workspace->set_tool(paint_tool);
+      paint_act->setChecked(true);
+    });
+  }
+
+  editor_map->set_draw_grid(true);
+  editor_map->set_background_color(flexlay::Color(100, 150, 200));
+
+  QObject::connect(paint_act, &QAction::triggered, [workspace, paint_tool, map_widget]() {
+    workspace->set_tool(paint_tool);
+    map_widget->setFocus();
+  });
+  QObject::connect(fill_act, &QAction::triggered, [workspace, fill_tool, map_widget]() {
+    workspace->set_tool(fill_tool);
+    map_widget->setFocus();
+  });
+  QObject::connect(select_act, &QAction::triggered, [workspace, select_tool, map_widget]() {
+    workspace->set_tool(select_tool);
+    map_widget->setFocus();
+  });
+  QObject::connect(grid_act, &QAction::toggled, [workspace, map_widget](bool on) {
+    if (auto* map = workspace->map()) {
+      map->set_draw_grid(on);
+      map_widget->update();
+    }
+  });
+  auto apply_zoom = [workspace, map_widget](float z) {
+    workspace->state().set_zoom(z);
+    map_widget->update();
+  };
+  QObject::connect(zoom_in_act, &QAction::triggered, [workspace, map_widget]() {
+    const float z = std::min(16.0f, workspace->state().get_zoom() * 1.25f);
+    workspace->state().set_zoom(z);
+    map_widget->update();
+  });
+  QObject::connect(zoom_out_act, &QAction::triggered, [workspace, map_widget]() {
+    const float z = std::max(0.1f, workspace->state().get_zoom() / 1.25f);
+    workspace->state().set_zoom(z);
+    map_widget->update();
+  });
+  QObject::connect(zoom_1_act, &QAction::triggered, [apply_zoom]() { apply_zoom(1.0f); });
+  QObject::connect(zoom_fit_act, &QAction::triggered, [workspace, map_widget]() {
+    if (auto* map = workspace->map()) {
+      const auto br = map->bounding_rect();
+      const float mw = std::max(1.0f, br.width());
+      const float mh = std::max(1.0f, br.height());
+      const float zw = static_cast<float>(map_widget->width()) / mw;
+      const float zh = static_cast<float>(map_widget->height()) / mh;
+      const float z = std::clamp(std::min(zw, zh) * 0.9f, 0.1f, 16.0f);
+      workspace->state().set_zoom(z);
+      workspace->state().set_pos(flexlay::Pointf(br.left + mw * 0.5f, br.top + mh * 0.5f));
+      map_widget->update();
+    }
+  });
 
   // Tile selector dock (groups + grid)
   auto* tile_dock = new QDockWidget(QStringLiteral("Tiles"), &window);
@@ -511,34 +585,6 @@ int main(int argc, char* argv[])
                    });
   window.setCentralWidget(central);
 
-  QObject::connect(paint_btn, &QPushButton::clicked, [workspace, paint_tool, map_widget]() {
-    workspace->set_tool(paint_tool);
-    map_widget->setFocus();
-  });
-  QObject::connect(fill_btn, &QPushButton::clicked, [workspace, fill_tool, map_widget]() {
-    workspace->set_tool(fill_tool);
-    map_widget->setFocus();
-  });
-  QObject::connect(select_btn, &QPushButton::clicked, [workspace, select_tool, map_widget, refresh_properties_from_selection]() {
-    workspace->set_tool(select_tool);
-    refresh_properties_from_selection();
-    map_widget->setFocus();
-  });
-
-  QObject::connect(add_rect_btn, &QPushButton::clicked, [workspace, object_layer, select_tool, editor_map, map_widget]() {
-    workspace->set_tool(select_tool);
-    auto rect = std::make_shared<flexlay::ObjMapRectObject>(
-      flexlay::Pointf(100, 100), flexlay::Sizef(64, 48), flexlay::Color(180, 255, 100, 180));
-    auto cmd = std::make_shared<flexlay::ObjectAddCommand>(object_layer);
-    cmd->add_object(rect);
-    // apply immediately then push (execute will no-op if we mark applied — simpler: just execute)
-    editor_map->execute(cmd);
-    object_layer->clear_selection();
-    rect->set_selected(true);
-    map_widget->update();
-    map_widget->setFocus();
-  });
-
 
   auto update_status = [&]() {
     window.statusBar()->showMessage(
@@ -557,7 +603,8 @@ int main(int argc, char* argv[])
 
 
   auto* file_menu = window.menuBar()->addMenu(QStringLiteral("&File"));
-  auto* open_act = file_menu->addAction(QStringLiteral("Open Level…"));
+  auto* open_act = file_menu->addAction(QStringLiteral("Open…"));
+  open_act->setShortcut(QKeySequence::Open);
   // Shared so Open Level / sector switch see the same resolved path
   auto supertux_datadir = std::make_shared<std::string>(options.datadir);
   place_tool->set_datadir(*supertux_datadir);
@@ -619,13 +666,38 @@ int main(int argc, char* argv[])
       *last_level_meta = level; // keep author/license/tileset for save
       auto new_map = flexlay::supertux::editor_map_from_level(level, ts, *supertux_datadir);
       workspace->set_map(new_map);
-      for (const auto& layer : new_map->layers()) {
-        auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer);
-        if (tml) {
-          paint_tool->set_tilemap(tml);
-          fill_tool->set_tilemap(tml);
-          break;
+      // Prefer solid tilemap for paint (matches Python get_some_solid_tilemap)
+      {
+        std::shared_ptr<flexlay::TilemapLayer> solid;
+        std::shared_ptr<flexlay::TilemapLayer> any_tm;
+        for (const auto& layer : new_map->layers()) {
+          if (auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer)) {
+            if (!any_tm) any_tm = tml;
+            if (tml->get_name().find("[solid]") != std::string::npos) {
+              solid = tml;
+              break;
+            }
+          }
         }
+        auto target = solid ? solid : any_tm;
+        if (target) {
+          paint_tool->set_tilemap(target);
+          fill_tool->set_tilemap(target);
+        }
+      }
+      paint_act->setChecked(true);
+      workspace->set_tool(paint_tool);
+      grid_act->setChecked(new_map->draw_grid());
+      // Zoom to fit like Python zoom-fit after load
+      {
+        const auto br = new_map->bounding_rect();
+        const float mw = std::max(1.0f, br.width());
+        const float mh = std::max(1.0f, br.height());
+        const float zw = static_cast<float>(std::max(map_widget->width(), 200)) / mw;
+        const float zh = static_cast<float>(std::max(map_widget->height(), 200)) / mh;
+        const float z = std::clamp(std::min(zw, zh) * 0.92f, 0.15f, 4.0f);
+        workspace->state().set_zoom(z);
+        workspace->state().set_pos(flexlay::Pointf(br.left + mw * 0.5f, br.top + mh * 0.5f));
       }
       *current_tileset = ts;
       tile_selector->set_tileset(ts);
@@ -684,7 +756,51 @@ int main(int argc, char* argv[])
   });
 
 
-  auto* save_act = file_menu->addAction(QStringLiteral("Save Level As…"));
+  auto* save_act = file_menu->addAction(QStringLiteral("Save As…"));
+  save_act->setShortcut(QKeySequence::SaveAs);
+  file_menu->addSeparator();
+  auto* quit_act = file_menu->addAction(QStringLiteral("Quit"));
+  quit_act->setShortcut(QKeySequence::Quit);
+  QObject::connect(quit_act, &QAction::triggered, &window, &QMainWindow::close);
+
+  auto* edit_menu = window.menuBar()->addMenu(QStringLiteral("&Edit"));
+  auto* undo_act = edit_menu->addAction(QStringLiteral("Undo"));
+  undo_act->setShortcut(QKeySequence::Undo);
+  auto* redo_act = edit_menu->addAction(QStringLiteral("Redo"));
+  redo_act->setShortcut(QKeySequence::Redo);
+  QObject::connect(undo_act, &QAction::triggered, [workspace, map_widget]() {
+    if (auto* map = workspace->map()) { map->undo(); map_widget->update(); }
+  });
+  QObject::connect(redo_act, &QAction::triggered, [workspace, map_widget]() {
+    if (auto* map = workspace->map()) { map->redo(); map_widget->update(); }
+  });
+
+  auto* view_menu = window.menuBar()->addMenu(QStringLiteral("&View"));
+  view_menu->addAction(grid_act);
+  view_menu->addSeparator();
+  auto add_zoom = [&](const QString& label, float z) {
+    auto* a = view_menu->addAction(label);
+    QObject::connect(a, &QAction::triggered, [workspace, map_widget, z]() {
+      workspace->state().set_zoom(z);
+      map_widget->update();
+    });
+  };
+  add_zoom(QStringLiteral("1:4 (25%)"), 0.25f);
+  add_zoom(QStringLiteral("1:2 (50%)"), 0.5f);
+  add_zoom(QStringLiteral("1:1 (100%)"), 1.0f);
+  add_zoom(QStringLiteral("2:1 (200%)"), 2.0f);
+  add_zoom(QStringLiteral("4:1 (400%)"), 4.0f);
+  view_menu->addSeparator();
+  view_menu->addAction(zoom_fit_act);
+
+  auto* help_menu = window.menuBar()->addMenu(QStringLiteral("&Help"));
+  auto* about_act = help_menu->addAction(QStringLiteral("About"));
+  QObject::connect(about_act, &QAction::triggered, [&window]() {
+    QMessageBox::about(&window, QStringLiteral("SuperTux Editor"),
+      QStringLiteral("SuperTux level editor (C++ / Flexlay).\n"
+                     "Open a .stlv with File→Open. Set datadir with -d or SUPERTUX_DATADIR.\n"
+                     "Tools: Paint (P), Fill (F), Objects (O), Grid (G)."));
+  });
   QObject::connect(save_act, &QAction::triggered, [&]() {
     auto map = workspace->get_map();
     if (!map) {

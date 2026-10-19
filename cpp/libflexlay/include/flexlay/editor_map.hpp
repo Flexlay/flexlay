@@ -54,7 +54,7 @@ public:
   int redo_stack_size() const { return static_cast<int>(m_redo_stack.size()); }
 
 private:
-  Color m_background_color{100, 80, 100};
+  Color m_background_color{100, 150, 200};
   bool m_modified = false;
   int m_serial = 0;
   bool m_has_bounding_rect = false;

@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-36.1-cli-debug-5ef0589.bundle`
+**Current tip bundle:** `flexlay-37.1-python-parity-ui-5ef0589.bundle`
 
 ---
 
@@ -520,6 +520,17 @@ images when a level is opened**. Startup always used a **demo map** unless
 supertux-editor -d /path/to/supertux/data \
   -l /path/to/supertux/data/levels/world1/….stlv -v
 ```
+
+### 2026-10-19 — Closer to Python SuperTux editor UI
+
+- Toolbar: Paint / Fill / Objects / Grid / Zoom / Brush sizes (shortcuts P F O G)
+- Menus: File (Open/Save As/Quit), Edit (Undo/Redo), View (grid + zoom presets), Help
+- Removed colored demo tile buttons sidebar — tiles come from Tiles dock
+- Level load: SuperTux-ish sky / ambient tint, grid on, paint targets **solid** tilemap, zoom-to-fit
+- Title: "SuperTux Editor" (not "simpleed")
+
+Still missing vs Python: minimap, icon toolbar art, full object brush palette,
+run-level, sector resize, property dialogs per type, worldmap, …
 
 ### Concrete next steps
 

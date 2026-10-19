@@ -321,7 +321,7 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
   const LoadedSector* sector = level.active();
   if (!sector) {
     map->set_bounding_rect(Rectf(0, 0, static_cast<float>(ts), static_cast<float>(ts)));
-    map->set_background_color(Color(45, 45, 55));
+    map->set_background_color(Color(100, 150, 200));
     return map;
   }
 
@@ -364,7 +364,15 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
 
   map->set_bounding_rect(Rectf(0, 0, static_cast<float>(std::max(max_w, 1) * ts),
                                static_cast<float>(std::max(max_h, 1) * ts)));
-  map->set_background_color(Color(45, 45, 55));
+  // SuperTux-ish sky; blend ambient light when the sector provides it
+  Color bg(100, 150, 200);
+  if (sector->has_ambient_light) {
+    bg = Color(static_cast<int>(sector->ambient_r * 180.0f + 40.0f),
+               static_cast<int>(sector->ambient_g * 180.0f + 40.0f),
+               static_cast<int>(sector->ambient_b * 200.0f + 30.0f));
+  }
+  map->set_background_color(bg);
+  map->set_draw_grid(true);
   return map;
 }
 
