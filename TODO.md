@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-46.1-property-schemas-5ef0589.bundle`
+**Current tip bundle:** `flexlay-47.1-schemas-animation-5ef0589.bundle`
 
 ---
 
@@ -592,10 +592,16 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - Selecting an object fills missing schema keys (does not overwrite)
 - Properties dock uses schema order and human labels; hides internal keys
 
+### 2026-10-19 — Expanded schemas + sprite animation
+
+- Property schemas regenerated from Python `gameobjs.py` (~32 types)
+- Multi-frame `.sprite` objects animate in the map view (~30 Hz)
+- **View → Animate Sprites** toggle (default on)
+
 ### Concrete next steps
 
 1. ~~Sector name list / multi-sector support~~  
-2. Animate sprite actions in editor (optional)  
+2. ~~Animate sprite actions in editor (optional)~~  
 3. ~~Hitbox-aware placement guides from sprite defs~~  
 4. Add/remove/rename sectors in UI  
 

@@ -190,6 +190,43 @@ std::shared_ptr<ObjMapObject> make_editor_object(const std::string& type,
     }
   }
 
+  // .sprite: load all frames for editor animation
+  if (!datadir.empty() && !image_rel.empty()) {
+    std::string rel = image_rel;
+    if (rel.size() >= 8 && rel.compare(0, 8, "/images/") == 0) rel = rel.substr(8);
+    else if (rel.size() >= 7 && rel.compare(0, 7, "images/") == 0) rel = rel.substr(7);
+    const std::string path = datadir + "/images/" + rel;
+    if (rel.size() > 7 && rel.compare(rel.size() - 7, 7, ".sprite") == 0) {
+      try {
+        const auto def = load_sprite_def_file(path);
+        const auto paths = preferred_image_paths(def);
+        std::vector<Sprite> frames;
+        for (const auto& ip : paths) {
+          try {
+            frames.push_back(Sprite(PixelBuffer::from_file(ip), ip));
+          } catch (...) {
+          }
+        }
+        if (!frames.empty()) {
+          auto obj = std::make_shared<ObjMapSpriteObject>(frames.front(), pos);
+          float fps = 15.0f;
+          if (const SpriteAction* act = preferred_action(def)) {
+            fps = act->fps;
+          }
+          if (frames.size() > 1) {
+            obj->set_frames(std::move(frames), fps);
+          }
+          obj->set_name(type);
+          obj->properties() = props;
+          obj->properties().set("type", type);
+          obj->properties().set("editor-image", image_rel);
+          return obj;
+        }
+      } catch (...) {
+      }
+    }
+  }
+
   if (auto spr = try_load_sprite(datadir, image_rel)) {
     auto obj = std::make_shared<ObjMapSpriteObject>(*spr, pos);
     obj->set_name(type);

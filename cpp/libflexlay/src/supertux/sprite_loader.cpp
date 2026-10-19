@@ -80,6 +80,10 @@ SpriteAction parse_action(const SExpr& node)
   if (!one.empty()) {
     act.images.push_back(one);
   }
+  const std::string fps_s = child_atom(node, "fps");
+  if (!fps_s.empty()) {
+    try { act.fps = std::stof(fps_s); } catch (...) {}
+  }
   // (hitbox x y width height) — SuperTux convention
   const SExpr* hb = find_child(node, "hitbox");
   if (hb && hb->is_list() && hb->as_list().size() >= 5) {
@@ -210,6 +214,29 @@ std::optional<Rectf> preferred_hitbox(const LoadedSpriteDef& def)
   }
   return Rectf(act->hitbox_x, act->hitbox_y,
                act->hitbox_x + act->hitbox_w, act->hitbox_y + act->hitbox_h);
+}
+
+
+std::vector<std::string> preferred_image_paths(const LoadedSpriteDef& def)
+{
+  std::vector<std::string> out;
+  const SpriteAction* act = preferred_action(def);
+  if (!act) {
+    return out;
+  }
+  const SpriteAction* src = act;
+  if (act->images.empty() && !act->mirror_action.empty()) {
+    for (const auto& other : def.actions) {
+      if (other.name == act->mirror_action && !other.images.empty()) {
+        src = &other;
+        break;
+      }
+    }
+  }
+  for (const auto& img : src->images) {
+    out.push_back(def.base_dir + "/" + img);
+  }
+  return out;
 }
 
 std::optional<Sprite> load_sprite_from_def(const std::string& sprite_path)

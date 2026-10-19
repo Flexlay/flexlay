@@ -1201,6 +1201,12 @@ int main(int argc, char* argv[])
 
   auto* view_menu = window.menuBar()->addMenu(QStringLiteral("&View"));
   view_menu->addAction(grid_act);
+  auto* animate_act = view_menu->addAction(QStringLiteral("Animate Sprites"));
+  animate_act->setCheckable(true);
+  animate_act->setChecked(true);
+  QObject::connect(animate_act, &QAction::toggled, [map_widget](bool on) {
+    map_widget->set_animate(on);
+  });
   view_menu->addSeparator();
   auto add_zoom = [&](const QString& label, float z) {
     auto* a = view_menu->addAction(label);

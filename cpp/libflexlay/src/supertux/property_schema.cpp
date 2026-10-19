@@ -21,46 +21,57 @@ const Schema& empty_schema()
 
 const std::unordered_map<std::string, Schema>& all_schemas()
 {
-  static const std::unordered_map<std::string, Schema> map = {
-    {"spawnpoint", {
-      {"name", "Name", std::string("main")},
+    static const std::unordered_map<std::string, Schema> map = {
+    {"ambient_sound", {
+      {"distance_factor", "Distance Factor", 0.0f},
+      {"distance_bias", "Distance Bias", 0.0f},
+      {"volume", "Max Volume", 0},
     }},
-    {"leveltime", {
-      {"time", "Time", 300},
-    }},
-    {"camera", {
-      {"mode", "Mode", std::string("normal")},
-      {"backscrolling", "Backscrolling", true},
+    {"background", {
+      {"x", "X", 0.0f},
+      {"y", "Y", 0.0f},
+      {"alignment", "Alignment", std::string("")},
+      {"speed", "Speed (X)", 0.0f},
+      {"speed_y", "Speed (Y)", 0.0f},
     }},
     {"bonusblock", {
       {"data", "Contents", 1},
       {"script", "Script", std::string("")},
-    }},
-    {"infoblock", {
       {"message", "Message", std::string("")},
-    }},
-    {"powerup", {
+      {"count", "Count", 1},
       {"sprite", "Sprite", std::string("")},
     }},
+    {"camera", {
+      {"mode", "Mode", std::string("")},
+      {"backscrolling", "Backscrollling", true},
+    }},
     {"candle", {
+      {"name", "Name", std::string("")},
       {"burning", "Burning", true},
+      {"flicker", "Flicker", true},
+      {"sprite", "Sprite", std::string("")},
     }},
-    {"torch", {
-      {"lit", "Lit", true},
+    {"darttrap", {
+      {"initial-delay", "Initial Delay", 0.0f},
+      {"fire-delay", "Fire Delay", 2.0f},
+      {"ammo", "Ammo", -1},
+      {"direction", "Direction", std::string("auto")},
     }},
-    {"scripttrigger", {
-      {"script", "Script", std::string("")},
-      {"button", "Button", false},
+    {"decal", {
+      {"sprite", "Sprite", std::string("")},
     }},
-    {"sequencetrigger", {
-      {"sequence", "Sequence", std::string("")},
+    {"dispenser", {
+      {"cycle", "Cycle", 0},
+      {"type", "Type", std::string("")},
+      {"random", "Random", false},
+      {"direction", "Direction", std::string("auto")},
     }},
     {"door", {
       {"sector", "Sector", std::string("")},
-      {"spawnpoint", "Spawnpoint", std::string("")},
+      {"spawnpoint", "SpawnPoint", std::string("")},
     }},
-    {"trampoline", {
-      {"portable", "Portable", true},
+    {"firefly", {
+      {"sprite", "Sprite", std::string("")},
     }},
     {"flame", {
       {"radius", "Radius", 100.0f},
@@ -70,40 +81,14 @@ const std::unordered_map<std::string, Schema>& all_schemas()
       {"radius", "Radius", 100.0f},
       {"speed", "Speed", 2.0f},
     }},
-    {"decal", {
-      {"sprite", "Sprite", std::string("")},
-    }},
-    {"wind", {
-      {"blowing", "Blowing", true},
-      {"speed", "Speed", 1.0f},
-    }},
-    {"pushbutton", {
-      {"script", "Script", std::string("")},
-    }},
-    {"switch", {
-      {"script", "Script", std::string("")},
-    }},
-    {"platform", {
-      {"name", "Name", std::string("")},
-    }},
-    {"secretarea", {
-      {"script", "Script", std::string("")},
+    {"infoblock", {
       {"message", "Message", std::string("")},
-    }},
-    {"ambient_sound", {
-      {"file", "Sample", std::string("")},
-      {"distance_factor", "Distance factor", 0.1f},
-      {"volume", "Volume", 1.0f},
-    }},
-    {"dispenser", {
-      {"badguy", "Badguy", std::string("snowball")},
-      {"cycle", "Cycle", 5.0f},
-    }},
-    {"snowball", {
-      {"direction", "Direction", std::string("auto")},
     }},
     {"jumpy", {
       {"direction", "Direction", std::string("left")},
+    }},
+    {"leveltime", {
+      {"time", "Time", 300},
     }},
     {"mrbomb", {
       {"direction", "Direction", std::string("auto")},
@@ -111,15 +96,75 @@ const std::unordered_map<std::string, Schema>& all_schemas()
     {"mriceblock", {
       {"direction", "Direction", std::string("auto")},
     }},
+    {"platform", {
+      {"name", "Name", std::string("")},
+      {"running", "Running", true},
+      {"sprite", "Sprite", std::string("")},
+    }},
+    {"powerup", {
+      {"disable-physics", "Disable Physics", false},
+      {"script", "Script", std::string("")},
+      {"sprite", "Sprite", std::string("")},
+    }},
+    {"pushbutton", {
+      {"script", "Script", std::string("")},
+      {"sprite", "Sprite", std::string("")},
+      {"direction", "Direction", std::string("auto")},
+    }},
+    {"scriptedobject", {
+      {"name", "Name", std::string("")},
+      {"visible", "Visible", false},
+      {"physic-enabled", "Physics", false},
+      {"solid", "Solid", false},
+      {"sprite", "Sprite", std::string("")},
+    }},
+    {"scripttrigger", {
+      {"script", "Script", std::string("")},
+      {"button", "Button", false},
+    }},
+    {"secretarea", {
+      {"script", "Script", std::string("")},
+      {"message", "Message", std::string("")},
+    }},
+    {"sequencetrigger", {
+      {"sequence", "Sequence", std::string("")},
+    }},
+    {"snowball", {
+      {"direction", "Direction", std::string("auto")},
+    }},
+    {"spawnpoint", {
+      {"name", "Name", std::string("main")},
+    }},
+    {"switch", {
+      {"script", "Script", std::string("")},
+      {"sprite", "Sprite", std::string("")},
+      {"direction", "Direction", std::string("auto")},
+    }},
+    {"torch", {
+      {"sprite", "Sprite", std::string("")},
+    }},
+    {"trampoline", {
+      {"portable", "Portable", true},
+    }},
     {"weak_block", {
       {"linked", "Linked", false},
     }},
-    {"coin", {}},
-    {"firefly", {
-      {"sprite", "Sprite", std::string("")},
+    {"willowisp", {
+      {"spawnpoint", "SpawnPoint", std::string("")},
+      {"flyspeed", "Fly Speed", 64.0f},
+      {"track-range", "Track Range", 384.0f},
+      {"vanish-range", "Vanish Range", 512.0f},
+      {"hit-script", "Hit Script", std::string("")},
+    }},
+    {"wind", {
+      {"name", "Name", std::string("")},
+      {"blowing", "Blowing", true},
+      {"speed-x", "Speed-X", 0.0f},
+      {"speed-y", "Speed-Y", 0.0f},
+      {"acceleration", "Acceleration", 0.0f},
     }},
   };
-  return map;
+return map;
 }
 
 bool is_internal_key(const std::string& key)

@@ -31,7 +31,9 @@ struct SpriteAction
   float hitbox_w = 0;
   float hitbox_h = 0;
   bool has_hitbox = false;
+  float fps = 15.0f;
 };
+
 
 struct LoadedSpriteDef
 {
@@ -47,6 +49,9 @@ LoadedSpriteDef load_sprite_def_text(const std::string& text, const std::string&
 const SpriteAction* preferred_action(const LoadedSpriteDef& def);
 
 std::optional<std::string> preferred_image_path(const LoadedSpriteDef& def);
+
+/** All image paths (absolute) for preferred action, after mirror resolution. */
+std::vector<std::string> preferred_image_paths(const LoadedSpriteDef& def);
 
 /** Hitbox of preferred action in sprite-local coordinates, if present. */
 std::optional<Rectf> preferred_hitbox(const LoadedSpriteDef& def);

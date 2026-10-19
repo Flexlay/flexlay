@@ -1,9 +1,7 @@
-// Flexlay - A Generic 2D Game Editor
-// Copyright (C) 2014, 2026 Ingo Ruhnke <grumbel@gmail.com>
-// SPDX-License-Identifier: GPL-3.0-or-later
-
 #include "flexlay/editor_map_widget.hpp"
 
+#include "flexlay/objmap_sprite_object.hpp"
+#include "flexlay/object_layer.hpp"
 #include "flexlay/commands/object_add_command.hpp"
 #include "flexlay/commands/object_move_command.hpp"
 #include "flexlay/qt_graphic_context.hpp"
@@ -13,6 +11,7 @@
 #include <algorithm>
 
 #include <QKeyEvent>
+#include <QTimer>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QWheelEvent>
@@ -26,6 +25,52 @@ EditorMapWidget::EditorMapWidget(QWidget* parent)
   setFocusPolicy(Qt::StrongFocus);
   setAutoFillBackground(false);
   setAttribute(Qt::WA_OpaquePaintEvent);
+
+  m_anim_timer = new QTimer(this);
+  m_anim_timer->setInterval(33); // ~30 Hz tick
+  connect(m_anim_timer, &QTimer::timeout, this, [this]() {
+    if (!m_animate || !m_workspace) {
+      return;
+    }
+    auto* map = m_workspace->map();
+    if (!map) {
+      return;
+    }
+    bool any = false;
+    for (const auto& layer : map->layers()) {
+      auto* ol = dynamic_cast<ObjectLayer*>(layer.get());
+      if (!ol) {
+        continue;
+      }
+      for (const auto& obj : ol->objects()) {
+        if (auto* spr = dynamic_cast<ObjMapSpriteObject*>(obj.get())) {
+          if (spr->animated()) {
+            spr->advance_animation(0.033f);
+            any = true;
+          }
+        }
+      }
+    }
+    if (any) {
+      update();
+    }
+  });
+  if (m_animate) {
+    m_anim_timer->start();
+  }
+}
+
+void EditorMapWidget::set_animate(bool on)
+{
+  m_animate = on;
+  if (!m_anim_timer) {
+    return;
+  }
+  if (on) {
+    m_anim_timer->start();
+  } else {
+    m_anim_timer->stop();
+  }
 }
 
 void EditorMapWidget::set_workspace(std::shared_ptr<Workspace> workspace)

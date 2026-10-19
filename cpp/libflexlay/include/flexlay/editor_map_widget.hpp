@@ -8,6 +8,8 @@
 #include "flexlay/workspace.hpp"
 
 #include <QWidget>
+
+class QTimer;
 #include <memory>
 
 namespace flexlay {
@@ -20,6 +22,10 @@ public:
   explicit EditorMapWidget(QWidget* parent = nullptr);
 
   void set_workspace(std::shared_ptr<Workspace> workspace);
+
+  /** When true, multi-frame ObjMapSpriteObjects advance (default true). */
+  void set_animate(bool on);
+  bool animate() const { return m_animate; }
   std::shared_ptr<Workspace> workspace() const { return m_workspace; }
 
   QSize sizeHint() const override { return QSize(960, 600); }
@@ -40,6 +46,8 @@ private:
   Pointf world_pos_from_event(const QPointF& pos) const;
 
   std::shared_ptr<Workspace> m_workspace;
+  bool m_animate = true;
+  QTimer* m_anim_timer = nullptr;
   bool m_panning = false;
   QPoint m_last_mouse;
 };
