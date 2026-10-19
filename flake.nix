@@ -82,7 +82,84 @@
             doCheck = false;
           });
 
+          /**
+           * C++ / Qt6 port of the editor core + simpleed demo.
+           * Build: nix build .#flexlay-cpp
+           * Run:   nix run .#flexlay-simpleed
+           */
+          flexlay-cpp = pkgs.stdenv.mkDerivation {
+            pname = "flexlay-cpp";
+            version = "0.2.0";
+            src = ./.;
+
+            nativeBuildInputs = [
+              pkgs.cmake
+              pkgs.pkg-config
+              pkgs.qt6.wrapQtAppsHook
+            ];
+
+            buildInputs = [
+              pkgs.qt6.qtbase
+              pkgs.libGL
+              pkgs.libglvnd
+            ];
+
+            cmakeFlags = [
+              "-S"
+              "cpp"
+              "-DFLEXLAY_BUILD_SIMPLEED=ON"
+              "-DFLEXLAY_BUILD_TESTS=ON"
+            ];
+
+            # cmake configure is run from build dir with source root; point at cpp/
+            configurePhase = ''
+              runHook preConfigure
+              cmake -S "$src/cpp" -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="$out" \
+                -DFLEXLAY_BUILD_SIMPLEED=ON \
+                -DFLEXLAY_BUILD_TESTS=ON
+              runHook postConfigure
+            '';
+
+            buildPhase = ''
+              runHook preBuild
+              cmake --build build -j"$NIX_BUILD_CORES"
+              runHook postBuild
+            '';
+
+            doCheck = true;
+            checkPhase = ''
+              runHook preCheck
+              ctest --test-dir build --output-on-failure
+              runHook postCheck
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              cmake --install build
+              runHook postInstall
+            '';
+
+            meta = with pkgs.lib; {
+              description = "Flexlay C++/Qt6 editor core and simpleed";
+              license = licenses.gpl3Plus;
+              platforms = platforms.linux;
+              mainProgram = "flexlay-simpleed";
+            };
+          };
+
+          # Alias for `nix run .#flexlay-simpleed`
+          flexlay-simpleed = flexlay-cpp;
+
           default = flexlay;
+        };
+
+        apps = {
+          flexlay-simpleed = {
+            type = "app";
+            program = "${packages.flexlay-cpp}/bin/flexlay-simpleed";
+          };
         };
 
         devShells = rec {
@@ -92,6 +169,27 @@
               # runHook setuptoolsShellHook
             '';
           };
+
+          # C++ port development shell
+          flexlay-cpp-dev = pkgs.mkShell {
+            packages = [
+              pkgs.cmake
+              pkgs.pkg-config
+              pkgs.gcc
+              pkgs.gdb
+              pkgs.qt6.qtbase
+              pkgs.qt6.qttools
+              pkgs.libGL
+              pkgs.libglvnd
+            ];
+            inputsFrom = [ packages.flexlay-cpp ];
+            shellHook = ''
+              echo "flexlay C++ dev shell — build with:"
+              echo "  cmake -S cpp -B build -DCMAKE_BUILD_TYPE=Debug"
+              echo "  cmake --build build && ctest --test-dir build"
+            '';
+          };
+
           default = flexlay-dev;
         };
       }

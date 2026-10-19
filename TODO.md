@@ -320,9 +320,17 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **ObjMapSelectTool** prefers handle hit → resize drag
 - Min size 8×8; handles drawn in yellow
 
+### 2026-10-19 — Flake C++ packaging
+
+- **flake.nix** packages: `flexlay-cpp`, `flexlay-simpleed` (alias)
+- App: `nix run .#flexlay-simpleed`
+- Dev shell: `nix develop .#flexlay-cpp-dev`
+- CMake **install** rules for lib + headers + binary
+- Python `flexlay` / `flexlay-nocheck` unchanged
+
 ### Concrete next steps
 
-1. ~~Scaffold through object CRUD + resize~~  
+1. ~~Scaffold through object CRUD + resize + flake~~  
 2. Multi-tile brushes / tile selector UI  
 3. Sprite objects / pixel buffer load  
 4. SuperTux + Python embed after simpleed is useful

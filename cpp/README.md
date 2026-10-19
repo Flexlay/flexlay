@@ -37,3 +37,18 @@ cmake --build build-cpp
 - [x] EditorMapWidget (pan middle-drag, zoom wheel)
 - [ ] Paint tool, undo, object layer
 - [ ] SuperTux (after simpleed)
+
+## Nix
+
+```bash
+# Build C++ editor + run tests
+nix build .#flexlay-cpp
+
+# Run simpleed
+nix run .#flexlay-simpleed
+
+# Dev shell
+nix develop .#flexlay-cpp-dev
+```
+
+Python editor remains `nix build .#flexlay` / `.#default`.

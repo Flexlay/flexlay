@@ -23,3 +23,17 @@ if(FLEXLAY_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
 endif()
+
+# Install rules (used by Nix packaging)
+include(GNUInstallDirs)
+install(TARGETS flexlay
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(DIRECTORY libflexlay/include/flexlay
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+if(FLEXLAY_BUILD_SIMPLEED)
+  install(TARGETS flexlay-simpleed RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
