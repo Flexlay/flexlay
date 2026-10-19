@@ -9,6 +9,8 @@
 #include "flexlay/util/sexpr.hpp"
 
 #include <fstream>
+#include <memory>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 
@@ -60,19 +62,58 @@ bool child_bool(const SExpr& list, const std::string& tag, bool def = false)
   return a == "#t" || a == "true" || a == "1";
 }
 
-/** Collect string atoms under (images ...) or (image ...). */
-std::vector<std::string> read_image_list(const SExpr& node)
+/** Image reference: either a path or a region crop inside a sheet. */
+struct ImageRef
 {
-  std::vector<std::string> out;
-  for (const char* key : {"images", "image", "editor-images"}) {
-    const SExpr* imgs = find_child(node, key);
+  std::string path;
+  bool is_region = false;
+  int rx = 0;
+  int ry = 0;
+  int rw = 0;
+  int rh = 0;
+};
+
+/**
+ * Collect image refs from (images ...), (image ...), or (editor-images ...).
+ * Prefers editor-images when present (editor display), else images/image.
+ * Supports atoms and (region "file" x y w h).
+ */
+std::vector<ImageRef> read_image_refs(const SExpr& node, bool prefer_editor)
+{
+  std::vector<ImageRef> out;
+  const char* keys_editor[] = {"editor-images", "images", "image"};
+  const char* keys_game[] = {"images", "image", "editor-images"};
+  const char** keys = prefer_editor ? keys_editor : keys_game;
+  const int nkeys = 3;
+
+  for (int k = 0; k < nkeys; ++k) {
+    const SExpr* imgs = find_child(node, keys[k]);
     if (!imgs || !imgs->is_list()) {
       continue;
     }
     for (size_t i = 1; i < imgs->as_list().size(); ++i) {
       const auto& e = imgs->as_list()[i];
       if (e.is_atom()) {
-        out.push_back(e.as_atom());
+        ImageRef r;
+        r.path = e.as_atom();
+        out.push_back(std::move(r));
+      } else if (e.is_list() && e.tag() == "region" && e.as_list().size() >= 6) {
+        // (region "file" x y w h)
+        ImageRef r;
+        if (!e.as_list()[1].is_atom()) {
+          continue;
+        }
+        r.path = e.as_list()[1].as_atom();
+        r.is_region = true;
+        try {
+          r.rx = std::stoi(e.as_list()[2].as_atom());
+          r.ry = std::stoi(e.as_list()[3].as_atom());
+          r.rw = std::stoi(e.as_list()[4].as_atom());
+          r.rh = std::stoi(e.as_list()[5].as_atom());
+        } catch (...) {
+          continue;
+        }
+        out.push_back(std::move(r));
       }
     }
     if (!out.empty()) {
@@ -84,53 +125,109 @@ std::vector<std::string> read_image_list(const SExpr& node)
 
 Color placeholder_color(int id)
 {
-  // Distinct-ish palette from id
   const uint8_t r = static_cast<uint8_t>(40 + (id * 37) % 180);
   const uint8_t g = static_cast<uint8_t>(40 + (id * 73) % 180);
   const uint8_t b = static_cast<uint8_t>(40 + (id * 19) % 180);
   return Color(r, g, b, 255);
 }
 
-void add_tile_def(Tileset& tileset, int id, const std::string& image_rel,
-                  const TilesetLoadOptions& opts, LoadedTilesetMeta& meta)
+/** Simple path → shared PixelBuffer cache for one load_tileset call. */
+class ImageCache
+{
+public:
+  explicit ImageCache(std::string datadir)
+    : m_datadir(std::move(datadir))
+  {
+  }
+
+  std::shared_ptr<PixelBuffer> get(const std::string& rel_path)
+  {
+    if (rel_path.empty() || m_datadir.empty()) {
+      return nullptr;
+    }
+    const auto it = m_cache.find(rel_path);
+    if (it != m_cache.end()) {
+      return it->second;
+    }
+    const std::string full = m_datadir + "/images/" + rel_path;
+    try {
+      auto pb = std::make_shared<PixelBuffer>(PixelBuffer::from_file(full));
+      m_cache[rel_path] = pb;
+      return pb;
+    } catch (...) {
+      m_cache[rel_path] = nullptr;
+      return nullptr;
+    }
+  }
+
+private:
+  std::string m_datadir;
+  std::map<std::string, std::shared_ptr<PixelBuffer>> m_cache;
+};
+
+Tile make_tile_from_ref(const ImageRef& ref, ImageCache* cache, int id)
+{
+  Tile tile(placeholder_color(id));
+  if (ref.path.empty()) {
+    return tile;
+  }
+  tile.set_filename(ref.path);
+
+  if (!cache) {
+    return tile;
+  }
+
+  auto sheet = cache->get(ref.path);
+  if (!sheet || sheet->empty()) {
+    return tile;
+  }
+
+  if (ref.is_region) {
+    PixelBuffer cropped = sheet->subregion(ref.rx, ref.ry, ref.rw, ref.rh);
+    if (!cropped.empty()) {
+      tile = Tile(std::move(cropped));
+      tile.set_filename(ref.path);
+    }
+  } else {
+    tile = Tile(*sheet);
+    tile.set_filename(ref.path);
+  }
+  return tile;
+}
+
+void add_tile_def(Tileset& tileset, int id, const ImageRef& ref, ImageCache* cache,
+                  LoadedTilesetMeta& meta)
 {
   if (id == 0) {
     return;
   }
-  Tile tile(placeholder_color(id));
-  if (!image_rel.empty()) {
-    tile.set_filename(image_rel);
-    if (opts.load_images && !opts.datadir.empty()) {
-      const std::string path = opts.datadir + "/images/" + image_rel;
-      try {
-        tile = Tile(PixelBuffer::from_file(path));
-        tile.set_filename(image_rel);
-      } catch (...) {
-        // keep placeholder
-      }
-    }
-  }
-  tileset.add_tile(id, tile);
+  tileset.add_tile(id, make_tile_from_ref(ref, cache, id));
   ++meta.tile_count;
 }
 
-void parse_single_tile(const SExpr& node, Tileset& tileset, const TilesetLoadOptions& opts,
+void parse_single_tile(const SExpr& node, Tileset& tileset, ImageCache* cache,
                        LoadedTilesetMeta& meta)
 {
   const int id = child_int(node, "id");
   if (id == 0) {
     return;
   }
-  const auto images = read_image_list(node);
-  const std::string img = images.empty() ? std::string{} : images.front();
-  add_tile_def(tileset, id, img, opts, meta);
+  // Prefer editor-images for the editor view (matches Python SuperTuxTileset).
+  const auto refs = read_image_refs(node, /*prefer_editor=*/true);
+  ImageRef ref;
+  if (!refs.empty()) {
+    ref = refs.front();
+  }
+  add_tile_def(tileset, id, ref, cache, meta);
   (void)child_bool(node, "solid"); // attributes reserved for later
 }
 
 void parse_bulk_tiles(const SExpr& node, Tileset& tileset, const TilesetLoadOptions& opts,
-                      LoadedTilesetMeta& meta)
+                      ImageCache* cache, LoadedTilesetMeta& meta)
 {
-  // (tiles (ids 1 2 3 ...) (width 4) (image "sheet.png") (attributes ...) ...)
+  // (tiles (ids 1 2 3 ...) (width 4) (image "sheet.png") ...)
+  // Sheet is sliced into tile_size×tile_size cells, row-major left-to-right,
+  // top-to-bottom; width is columns per row.
   const SExpr* ids_node = find_child(node, "ids");
   if (!ids_node || !ids_node->is_list()) {
     return;
@@ -157,8 +254,41 @@ void parse_bulk_tiles(const SExpr& node, Tileset& tileset, const TilesetLoadOpti
     }
   }
 
+  const int width = child_int(node, "width", 1);
+  const int cols = width > 0 ? width : 1;
+  const int tile_px = opts.tile_size > 0 ? opts.tile_size : 32;
+
+  std::shared_ptr<PixelBuffer> sheet_pb;
+  if (cache && !sheet.empty()) {
+    sheet_pb = cache->get(sheet);
+  }
+
+  int x = 0;
+  int y = 0;
   for (int id : ids) {
-    add_tile_def(tileset, id, sheet, opts, meta);
+    if (id != 0) {
+      ImageRef ref;
+      ref.path = sheet;
+      if (sheet_pb && !sheet_pb->empty()) {
+        ref.is_region = true;
+        ref.rx = x * tile_px;
+        ref.ry = y * tile_px;
+        ref.rw = tile_px;
+        ref.rh = tile_px;
+        PixelBuffer cropped = sheet_pb->subregion(ref.rx, ref.ry, ref.rw, ref.rh);
+        Tile tile = cropped.empty() ? Tile(placeholder_color(id)) : Tile(std::move(cropped));
+        tile.set_filename(sheet);
+        tileset.add_tile(id, tile);
+        ++meta.tile_count;
+      } else {
+        add_tile_def(tileset, id, ref, cache, meta);
+      }
+    }
+    x += 1;
+    if (x >= cols) {
+      x = 0;
+      y += 1;
+    }
   }
 }
 
@@ -182,26 +312,27 @@ void parse_tilegroup(const SExpr& node, LoadedTilesetMeta& meta)
   meta.tilegroups.push_back(std::move(g));
 }
 
-void walk(const SExpr& node, Tileset& tileset, const TilesetLoadOptions& opts, LoadedTilesetMeta& meta)
+void walk(const SExpr& node, Tileset& tileset, const TilesetLoadOptions& opts, ImageCache* cache,
+          LoadedTilesetMeta& meta)
 {
   if (!node.is_list() || node.as_list().empty()) {
     return;
   }
   const std::string tag = node.tag();
   if (tag == "tile") {
-    parse_single_tile(node, tileset, opts, meta);
+    parse_single_tile(node, tileset, cache, meta);
     return;
   }
   if (tag == "tiles") {
     // bulk sheet mapping
     if (find_child(node, "ids")) {
-      parse_bulk_tiles(node, tileset, opts, meta);
+      parse_bulk_tiles(node, tileset, opts, cache, meta);
       return;
     }
     // container of individual (tile ...) entries
     for (size_t i = 1; i < node.as_list().size(); ++i) {
       if (node.as_list()[i].is_list()) {
-        walk(node.as_list()[i], tileset, opts, meta);
+        walk(node.as_list()[i], tileset, opts, cache, meta);
       }
     }
     return;
@@ -212,14 +343,14 @@ void walk(const SExpr& node, Tileset& tileset, const TilesetLoadOptions& opts, L
   }
   if (tag == "tilegroups" || tag == "supertux-tileset" || tag == "autotilesets") {
     for (size_t i = 1; i < node.as_list().size(); ++i) {
-      walk(node.as_list()[i], tileset, opts, meta);
+      walk(node.as_list()[i], tileset, opts, cache, meta);
     }
     return;
   }
   // generic walk
   for (size_t i = 1; i < node.as_list().size(); ++i) {
     if (node.as_list()[i].is_list()) {
-      walk(node.as_list()[i], tileset, opts, meta);
+      walk(node.as_list()[i], tileset, opts, cache, meta);
     }
   }
 }
@@ -236,7 +367,13 @@ load_tileset_text(const std::string& text, const TilesetLoadOptions& opts)
 
   auto tileset = std::make_shared<Tileset>(opts.tile_size);
   LoadedTilesetMeta meta;
-  walk(root, *tileset, opts, meta);
+
+  std::unique_ptr<ImageCache> cache;
+  if (opts.load_images && !opts.datadir.empty()) {
+    cache = std::make_unique<ImageCache>(opts.datadir);
+  }
+
+  walk(root, *tileset, opts, cache.get(), meta);
   return {tileset, meta};
 }
 

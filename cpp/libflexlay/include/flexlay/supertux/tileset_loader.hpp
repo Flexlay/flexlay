@@ -7,7 +7,7 @@
 
 /**
  * Minimal SuperTux-Origins tileset loader (.stts / supertux-tileset).
- * Parses (tile ...) definitions and bulk (tiles ...) id lists.
+ * Parses (tile ...) definitions and bulk (tiles ...) id lists with sheet cropping.
  * Image loading is optional (datadir + Qt PixelBuffer::from_file).
  */
 
