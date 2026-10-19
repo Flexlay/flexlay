@@ -13,6 +13,7 @@ set(FLEXLAY_CORE_SOURCES
   src/sprite.cpp
   src/util/sexpr.cpp
   src/supertux/level_loader.cpp
+  src/supertux/level_saver.cpp
   src/supertux/tileset_loader.cpp
   src/commands/paint_command.cpp
   src/commands/object_move_command.cpp

@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-27.1-place-load-objects-5ef0589.bundle`
+**Current tip bundle:** `flexlay-28.1-level-save-5ef0589.bundle`
 
 ---
 
@@ -435,13 +435,20 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - Prototypes: +snowball, scripttrigger, powerup, leveltime
 - simpleed: object palette activates place tool; Open Level shows object count
 
+### 2026-10-19 — Level save + post-place select
+
+- **level_saver**: `save_level_text` / `save_level_file` / `level_from_editor_map`
+- Round-trip tested (`test_level_saver`)
+- simpleed **File → Save Level As…** writes `.stlv`
+- Place tool switches to **select** after placing so properties can be edited
+
 ### Concrete next steps
 
-1. ~~Place-object click tool~~  
-2. ~~Load game objects from SuperTux levels (minimal subset)~~  
-3. Save level (tilemaps + objects) back to `.stlv` sexpr  
-4. Click-to-select then edit properties after place  
-5. More accurate object sizes/sprites from SuperTux data  
+1. ~~Save level (tilemaps + objects) to `.stlv`~~  
+2. ~~Select after place for property edit~~  
+3. Preserve more level metadata on load/save (author, license, tileset path)  
+4. Object sprites / accurate default sizes from SuperTux assets  
+5. Undo grouping for multi-step place+property  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

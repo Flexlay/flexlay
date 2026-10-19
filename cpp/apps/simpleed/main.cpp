@@ -18,6 +18,7 @@
 #include "flexlay/tools/tile_fill_tool.hpp"
 #include "flexlay/tools/tile_paint_tool.hpp"
 #include "flexlay/supertux/level_loader.hpp"
+#include "flexlay/supertux/level_saver.hpp"
 #include "flexlay/supertux/tileset_loader.hpp"
 #include "flexlay/workspace.hpp"
 #include "flexlay/gui/tile_selector_widget.hpp"
@@ -302,7 +303,7 @@ int main(int argc, char* argv[])
     place_tool->on_placed = [props_widget, map_widget, select_tool, workspace](
                               std::shared_ptr<flexlay::ObjMapObject> obj) {
       props_widget->set_object(obj);
-      // stay in place mode for rapid placement; user switches tool to stop
+      workspace->set_tool(select_tool);
       map_widget->update();
     };
     place_tool->on_cancelled = [workspace, select_tool, map_widget]() {
@@ -418,6 +419,7 @@ int main(int argc, char* argv[])
   // Expected layout: $datadir/images/tiles.stts and $datadir/images/...
   const char* datadir_env = std::getenv("SUPERTUX_DATADIR");
   const std::string supertux_datadir = datadir_env ? datadir_env : std::string{};
+  auto last_level_name = std::make_shared<std::string>("unnamed");
 
   QObject::connect(open_act, &QAction::triggered, [&]() {
     const QString path = QFileDialog::getOpenFileName(
@@ -466,6 +468,7 @@ int main(int argc, char* argv[])
           }
         }
       }
+      *last_level_name = level.name.empty() ? "unnamed" : level.name;
       auto new_map = flexlay::supertux::editor_map_from_level(level, ts);
       workspace->set_map(new_map);
       for (const auto& layer : new_map->layers()) {
@@ -513,6 +516,36 @@ int main(int argc, char* argv[])
           .arg(tilegroups->size()));
     } catch (const std::exception& ex) {
       QMessageBox::warning(&window, QStringLiteral("Open Level"),
+                           QString::fromUtf8(ex.what()));
+    }
+  });
+
+
+  auto* save_act = file_menu->addAction(QStringLiteral("Save Level As…"));
+  QObject::connect(save_act, &QAction::triggered, [&]() {
+    auto map = workspace->get_map();
+    if (!map) {
+      return;
+    }
+    const QString path = QFileDialog::getSaveFileName(
+      &window, QStringLiteral("Save SuperTux Level"),
+      QString::fromStdString(*last_level_name + ".stlv"),
+      QStringLiteral("SuperTux levels (*.stlv *.stl);;All (*)"));
+    if (path.isEmpty()) {
+      return;
+    }
+    try {
+      auto level = flexlay::supertux::level_from_editor_map(
+        *map, *last_level_name, "main", 4);
+      flexlay::supertux::save_level_file(level, path.toStdString());
+      map->set_modified(false);
+      window.statusBar()->showMessage(
+        QStringLiteral("Saved %1 (%2 tilemaps, %3 objects)")
+          .arg(path)
+          .arg(level.tilemaps.size())
+          .arg(level.objects.size()));
+    } catch (const std::exception& ex) {
+      QMessageBox::warning(&window, QStringLiteral("Save Level"),
                            QString::fromUtf8(ex.what()));
     }
   });
