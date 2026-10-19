@@ -30,7 +30,17 @@ target_compile_features(flexlay PUBLIC cxx_std_17)
 
 # Qt is found by the top-level CMakeLists when FLEXLAY_BUILD_SIMPLEED is ON.
 if(FLEXLAY_BUILD_SIMPLEED)
-  target_sources(flexlay PRIVATE src/editor_map_widget.cpp)
+  # List the Q_OBJECT header so AUTOMOC generates the meta-object code into
+  # this static library (otherwise vtable/map_changed/staticMetaObject are missing).
+  target_sources(flexlay PRIVATE
+    src/editor_map_widget.cpp
+    include/flexlay/editor_map_widget.hpp
+  )
+  set_target_properties(flexlay PROPERTIES
+    AUTOMOC ON
+    AUTOUIC OFF
+    AUTORCC OFF
+  )
   target_link_libraries(flexlay PUBLIC Qt6::Core Qt6::Gui Qt6::Widgets)
   target_compile_definitions(flexlay PUBLIC FLEXLAY_HAS_QT=1)
 endif()

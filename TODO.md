@@ -334,6 +334,12 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - `flexlay-simpleed` links only `flexlay::flexlay` (Qt via PUBLIC)
 - Fixes: `Target "flexlay-simpleed" links to Qt6::Core but the target was not found`
 
+### 2026-10-19 — AUTOMOC for EditorMapWidget
+
+- `EditorMapWidget` has `Q_OBJECT` / `map_changed` signal
+- List `editor_map_widget.hpp` in `flexlay` target sources + `AUTOMOC ON`
+- Fixes undefined `map_changed`, `staticMetaObject`, vtable at link
+
 ### Concrete next steps
 
 1. ~~Scaffold through object CRUD + resize + flake~~  
