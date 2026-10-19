@@ -20,6 +20,15 @@ public:
 
   void add_tile(int tile_id, const Tile& tile) { m_tiles[tile_id] = tile; }
 
+  Tile& create(int tile_id)
+  {
+    const auto it = m_tiles.find(tile_id);
+    if (it == m_tiles.end()) {
+      throw std::runtime_error("Tileset::create: unknown tile id");
+    }
+    return it->second;
+  }
+
   const Tile& create(int tile_id) const
   {
     const auto it = m_tiles.find(tile_id);

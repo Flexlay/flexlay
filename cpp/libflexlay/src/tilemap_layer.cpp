@@ -46,19 +46,23 @@ void TilemapLayer::draw(GraphicContext& gc, const Point& pos)
         continue;
       }
 
-      const Tile& tile = m_tileset->create(static_cast<int>(tile_id));
+      Tile& tile = m_tileset->create(static_cast<int>(tile_id));
       if (tile.is_transparent()) {
         continue;
       }
 
-      Color color = tile.get_color();
-      if (m_foreground_color != Color(255, 255, 255, 255)) {
-        color = Color((color.r * m_foreground_color.r) / 255,
-                      (color.g * m_foreground_color.g) / 255,
-                      (color.b * m_foreground_color.b) / 255,
-                      (color.a * m_foreground_color.a) / 255);
+      if (tile.has_image()) {
+        tile.get_sprite().draw(px, py, gc);
+      } else {
+        Color color = tile.get_color();
+        if (m_foreground_color != Color(255, 255, 255, 255)) {
+          color = Color((color.r * m_foreground_color.r) / 255,
+                        (color.g * m_foreground_color.g) / 255,
+                        (color.b * m_foreground_color.b) / 255,
+                        (color.a * m_foreground_color.a) / 255);
+        }
+        gc.fill_rect(cell, color);
       }
-      gc.fill_rect(cell, color);
 
       if (m_draw_attribute) {
         gc.fill_rect(cell, tile.get_attribute_color());

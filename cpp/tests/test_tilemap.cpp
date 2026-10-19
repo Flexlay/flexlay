@@ -6,6 +6,7 @@
 #include "flexlay/editor_map.hpp"
 #include "flexlay/graphic_context.hpp"
 #include "flexlay/graphic_context_state.hpp"
+#include "flexlay/pixel_buffer.hpp"
 #include "flexlay/tile.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/tileset.hpp"
@@ -25,6 +26,7 @@ class RecordingGC : public flexlay::GraphicContext
 public:
   struct Fill { flexlay::Rectf rect; flexlay::Color color; };
   std::vector<Fill> fills;
+  int images = 0;
   flexlay::Rectf clip{0, 0, 1000, 1000};
 
   void clear(const flexlay::Color&) override {}
@@ -33,6 +35,7 @@ public:
   {
     fills.push_back({rect, color});
   }
+  void draw_image(const flexlay::PixelBuffer&, float, float, float, float) override { ++images; }
   void draw_line(float, float, float, float, const flexlay::Color&) override {}
   void push_modelview() override {}
   void pop_modelview() override {}
@@ -51,7 +54,8 @@ int main()
 
   auto tileset = std::make_shared<Tileset>(16);
   tileset->add_tile(1, Tile(Color(255, 0, 0)));
-  tileset->add_tile(2, Tile(Color(0, 255, 0)));
+  tileset->add_tile(2, Tile(PixelBuffer::from_color(Size(16, 16), Color(0, 255, 0))));
+  CHECK(tileset->create(2).has_image());
   CHECK(tileset->get_tile_size() == 16);
   CHECK(tileset->has_tile(1));
   CHECK(!tileset->has_tile(99));
@@ -64,7 +68,8 @@ int main()
 
   RecordingGC gc;
   layer->draw(gc);
-  CHECK(gc.fills.size() == 2);
+  CHECK(gc.fills.size() == 1);  // solid-color tile 1
+  CHECK(gc.images == 1);        // image tile 2
 
   auto map = std::make_shared<EditorMap>();
   map->set_bounding_rect(Rectf(0, 0, 64, 48));
@@ -81,7 +86,7 @@ int main()
   ws.state().set_size(200, 100);
   RecordingGC gc2;
   ws.draw(gc2);
-  CHECK(gc2.fills.size() >= 1);
+  CHECK(gc2.fills.size() + gc2.images >= 1);
 
   std::cout << "test_tilemap: ok\n";
   return 0;

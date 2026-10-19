@@ -367,11 +367,17 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **ObjMapSpriteObject**
 - simpleed demo checker sprite; **test_sprite**
 
+### 2026-10-19 — Tile images
+
+- **Tile** holds optional **PixelBuffer** / lazy **Sprite**
+- **TilemapLayer::draw** uses `draw_image` when tile has image, else solid color
+- simpleed patterned demo tiles
+
 ### Concrete next steps
 
-1. ~~Scaffold through sprites~~  
-2. SuperTux level load/save (minimal Python or pure C++)  
-3. Tile image loading from tilesets
+1. ~~Scaffold through tile images~~  
+2. SuperTux tileset (.strf) / level (.stl) load (minimal)  
+3. Optional Python bridge only for complex game logic
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

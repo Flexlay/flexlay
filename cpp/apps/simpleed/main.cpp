@@ -38,11 +38,24 @@ int main(int argc, char* argv[])
 
   constexpr int tile_size = 32;
   auto tileset = std::make_shared<flexlay::Tileset>(tile_size);
-  tileset->add_tile(1, flexlay::Tile(flexlay::Color(70, 130, 180)));
-  tileset->add_tile(2, flexlay::Tile(flexlay::Color(60, 179, 113)));
-  tileset->add_tile(3, flexlay::Tile(flexlay::Color(205, 92, 92)));
-  tileset->add_tile(4, flexlay::Tile(flexlay::Color(238, 221, 130)));
-  tileset->add_tile(5, flexlay::Tile(flexlay::Color(147, 112, 219)));
+  auto make_tile_image = [tile_size](const flexlay::Color& base, const flexlay::Color& accent) {
+    auto pb = flexlay::PixelBuffer::from_color(flexlay::Size(tile_size, tile_size), base);
+    for (int y = 0; y < tile_size; ++y) {
+      for (int x = 0; x < tile_size; ++x) {
+        if (x == 0 || y == 0 || x == tile_size - 1 || y == tile_size - 1) {
+          pb.set_pixel(x, y, accent);
+        } else if (((x / 4) + (y / 4)) % 2 == 0) {
+          pb.set_pixel(x, y, accent);
+        }
+      }
+    }
+    return flexlay::Tile(std::move(pb));
+  };
+  tileset->add_tile(1, make_tile_image(flexlay::Color(70, 130, 180), flexlay::Color(100, 160, 210)));
+  tileset->add_tile(2, make_tile_image(flexlay::Color(60, 179, 113), flexlay::Color(90, 200, 140)));
+  tileset->add_tile(3, make_tile_image(flexlay::Color(205, 92, 92), flexlay::Color(230, 120, 120)));
+  tileset->add_tile(4, make_tile_image(flexlay::Color(238, 221, 130), flexlay::Color(250, 240, 180)));
+  tileset->add_tile(5, make_tile_image(flexlay::Color(147, 112, 219), flexlay::Color(180, 150, 240)));
 
   constexpr int map_w = 40;
   constexpr int map_h = 24;
