@@ -271,14 +271,33 @@ Avoid rewriting sexpr/`gameobjs.py` on day one of SuperTux support.
 
 ---
 
-## Concrete next implementation steps
+## Progress log
 
-1. Scaffold `cpp/` with CMake, Qt6, empty `libflexlay` + `apps/simpleed`.  
-2. Port `math` + `Color` + small unit tests.  
-3. Port `Field` and `TilemapLayer` draw path with stub `GraphicContext`.  
-4. Minimal main window + map widget (blank/filled tilemap).  
-5. Tools + undo until C++ simpleed is useful.  
-6. **Only then** SuperTux + Python embed for load/save.
+### 2026-10-19 — Phase 0 + domain types
+
+Added `cpp/`:
+
+- CMake project; `libflexlay` static lib; `apps/simpleed`; tests
+- **math:** Point/Pointf, Size/Sizef, Rect/Rectf, Origin (header-only, no Qt)
+- **Color / Colorf** (no Qt in headers)
+- **Field** with `std::vector<uint32_t>` (numpy replaced); unit tests green
+- **qt_compat.hpp** for QPoint/QColor/QRect bridges
+- **flexlay-simpleed**: minimal Qt6 main window proving link + Field sample
+  (map editing not yet)
+
+Tests: `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --build build && ctest --test-dir build`
+
+Note: full simpleed needs Qt6 Gui (OpenGL on some Nix setups); core tests do not.
+
+### Concrete next steps
+
+1. ~~Scaffold `cpp/`~~  
+2. ~~Port `math` + `Color` + tests~~  
+3. ~~Port `Field`~~  
+4. **Stub GraphicContext + TilemapLayer draw**  
+5. Map widget in simpleed (blank/filled tilemap)  
+6. Tools + undo  
+7. SuperTux + Python embed only after simpleed edits maps
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 
