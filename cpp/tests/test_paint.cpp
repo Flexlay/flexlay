@@ -88,6 +88,20 @@ int main()
   CHECK(copied.at(1, 1) == 1);
   CHECK(!copied.is_opaque());
 
+  // Flood fill
+  for (int y = 0; y < 4; ++y)
+    for (int x = 0; x < 4; ++x)
+      layer->field().put(x, y, 0);
+  layer->field().put(1, 1, 0);
+  auto fill_cmd = std::make_shared<PaintCommand>(layer);
+  fill_cmd->flood_fill(0, 0, TileBrush::single_tile(1));
+  CHECK(layer->field().at(0, 0) == 1);
+  CHECK(layer->field().at(3, 3) == 1);
+  map->execute(fill_cmd);
+  map->undo();
+  CHECK(layer->field().at(0, 0) == 0);
+  CHECK(layer->field().at(3, 3) == 0);
+
   std::cout << "test_paint: ok\n";
   return 0;
 }

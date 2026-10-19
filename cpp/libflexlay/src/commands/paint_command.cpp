@@ -5,6 +5,7 @@
 #include "flexlay/commands/paint_command.hpp"
 
 #include <stdexcept>
+#include <vector>
 
 namespace flexlay {
 
@@ -84,6 +85,67 @@ void PaintCommand::redo()
 {
   for (const auto& c : m_changes) {
     m_layer->field().put(c.x, c.y, c.new_id);
+  }
+}
+
+void PaintCommand::flood_fill(int x, int y, const TileBrush& brush)
+{
+  Field& field = m_layer->field();
+  if (x < 0 || y < 0 || x >= field.width() || y >= field.height()) {
+    return;
+  }
+  if (brush.width() < 1 || brush.height() < 1) {
+    return;
+  }
+
+  const uint32_t replace_id = field.at(x, y);
+  // Avoid infinite fill if every brush cell is replace_id
+  bool brush_has_other = false;
+  for (int by = 0; by < brush.height() && !brush_has_other; ++by) {
+    for (int bx = 0; bx < brush.width(); ++bx) {
+      if (brush.at(bx, by) != replace_id) {
+        brush_has_other = true;
+        break;
+      }
+    }
+  }
+  if (!brush_has_other) {
+    return;
+  }
+
+  const int w = field.width();
+  const int h = field.height();
+  std::vector<uint8_t> visited(static_cast<size_t>(w * h), 0);
+  std::vector<std::pair<int, int>> stack;
+  stack.emplace_back(x, y);
+
+  auto idx = [w](int px, int py) { return static_cast<size_t>(py * w + px); };
+
+  while (!stack.empty()) {
+    const auto [cx, cy] = stack.back();
+    stack.pop_back();
+    if (cx < 0 || cy < 0 || cx >= w || cy >= h) {
+      continue;
+    }
+    if (visited[idx(cx, cy)]) {
+      continue;
+    }
+    if (field.at(cx, cy) != replace_id) {
+      continue;
+    }
+    visited[idx(cx, cy)] = 1;
+
+    int bx = (cx - x) % brush.width();
+    int by = (cy - y) % brush.height();
+    if (bx < 0) bx += brush.width();
+    if (by < 0) by += brush.height();
+    const uint32_t fill_id = brush.at(bx, by);
+    record_cell(cx, cy, fill_id);
+
+    stack.emplace_back(cx + 1, cy);
+    stack.emplace_back(cx - 1, cy);
+    stack.emplace_back(cx, cy + 1);
+    stack.emplace_back(cx, cy - 1);
   }
 }
 

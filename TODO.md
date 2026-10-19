@@ -354,12 +354,17 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - Selection overlay while dragging
 - simpleed status shows brush WxH
 
+### 2026-10-19 — Flood fill
+
+- **PaintCommand::flood_fill** (stack + visited; patterned brush; undoable)
+- **TileFillTool**
+- simpleed: **Flood fill** tool button
+
 ### Concrete next steps
 
-1. ~~Scaffold through copy-brush~~  
-2. Flood fill tool  
-3. Sprite objects / pixel buffer load  
-4. SuperTux + Python embed after simpleed is useful
+1. ~~Scaffold through flood fill~~  
+2. Sprite objects / pixel buffer load  
+3. SuperTux + Python embed after simpleed is useful
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

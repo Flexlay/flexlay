@@ -31,6 +31,8 @@ public:
   void paint_cell(int x, int y, uint32_t tile_id);
   /** Stamp brush with top-left at (x, y) in tile coordinates. */
   void paint_brush(int x, int y, const TileBrush& brush);
+  /** Flood-fill connected region of same tile id starting at (x,y), stamped with brush. */
+  void flood_fill(int x, int y, const TileBrush& brush);
 
   bool empty() const { return m_changes.empty(); }
 

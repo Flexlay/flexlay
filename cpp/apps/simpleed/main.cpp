@@ -11,6 +11,7 @@
 #include "flexlay/tileset.hpp"
 #include "flexlay/commands/object_add_command.hpp"
 #include "flexlay/tools/objmap_select_tool.hpp"
+#include "flexlay/tools/tile_fill_tool.hpp"
 #include "flexlay/tools/tile_paint_tool.hpp"
 #include "flexlay/workspace.hpp"
 
@@ -75,6 +76,10 @@ int main(int argc, char* argv[])
   paint_tool->set_tilemap(tilemap);
   paint_tool->set_tile_id(1);
 
+  auto fill_tool = std::make_shared<flexlay::TileFillTool>();
+  fill_tool->set_tilemap(tilemap);
+  fill_tool->set_tile_id(1);
+
   auto select_tool = std::make_shared<flexlay::ObjMapSelectTool>();
   select_tool->set_object_layer(object_layer);
 
@@ -95,8 +100,10 @@ int main(int argc, char* argv[])
 
   side_layout->addWidget(new QLabel(QStringLiteral("Tool:"), sidebar));
   auto* paint_btn = new QPushButton(QStringLiteral("Paint tiles"), sidebar);
+  auto* fill_btn = new QPushButton(QStringLiteral("Flood fill"), sidebar);
   auto* select_btn = new QPushButton(QStringLiteral("Select objects"), sidebar);
   side_layout->addWidget(paint_btn);
+  side_layout->addWidget(fill_btn);
   side_layout->addWidget(select_btn);
   auto* add_rect_btn = new QPushButton(QStringLiteral("Add rect"), sidebar);
   side_layout->addWidget(add_rect_btn);
@@ -105,8 +112,9 @@ int main(int argc, char* argv[])
   auto make_tile_btn = [&](uint32_t id, const QString& label, const QColor& color) {
     auto* btn = new QPushButton(label, sidebar);
     btn->setStyleSheet(QStringLiteral("background-color: %1; min-height: 28px;").arg(color.name()));
-    QObject::connect(btn, &QPushButton::clicked, [paint_tool, workspace, id]() {
+    QObject::connect(btn, &QPushButton::clicked, [paint_tool, fill_tool, workspace, id]() {
       paint_tool->set_tile_id(id);
+      fill_tool->set_tile_id(id);
       workspace->set_tool(paint_tool);
     });
     side_layout->addWidget(btn);
@@ -137,6 +145,10 @@ int main(int argc, char* argv[])
 
   QObject::connect(paint_btn, &QPushButton::clicked, [workspace, paint_tool, map_widget]() {
     workspace->set_tool(paint_tool);
+    map_widget->setFocus();
+  });
+  QObject::connect(fill_btn, &QPushButton::clicked, [workspace, fill_tool, map_widget]() {
+    workspace->set_tool(fill_tool);
     map_widget->setFocus();
   });
   QObject::connect(select_btn, &QPushButton::clicked, [workspace, select_tool, map_widget]() {
