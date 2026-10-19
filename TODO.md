@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-40.1-sectors-badguys-5ef0589.bundle`
+**Current tip bundle:** `flexlay-41.1-full-object-registry-5ef0589.bundle`
 
 ---
 
@@ -554,6 +554,12 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - **Sector → Sector Properties…** (name, gravity, ambient RGB)
 - **File → Level Properties…** (name, author, license, contact, tileset, target time)
 - Object palette expanded with common badguys (iceblock, bomb, crystallo, fish, …)
+
+### 2026-10-19 — Full object registry + Layer menu
+
+- Object visual table + palette: **~87 types** from Python `badguys.py` + `gameobjs.py`
+  (editor images only; no Python runtime)
+- **Layer → Show All / Hide All**
 
 ### Concrete next steps
 

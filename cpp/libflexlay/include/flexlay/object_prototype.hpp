@@ -7,7 +7,8 @@
 
 /**
  * Data-driven object type descriptors for the editor palette.
- * Not a port of SuperTux gameobjs.py — a small, extensible registry.
+ * Data-driven registry generated from SuperTux editor badguys/gameobjs lists
+ * (images only; no Python embedding).
  */
 
 #include "flexlay/color.hpp"
@@ -63,7 +64,6 @@ inline std::vector<ObjectPrototype> default_object_prototypes()
     if (image && *image) {
       p.editor_image = image;
     }
-    // Prefer SuperTux visual table sizes when known
     if (auto info = supertux::object_visual_info(id)) {
       if (p.editor_image.empty()) {
         p.editor_image = info->editor_image;
@@ -74,83 +74,205 @@ inline std::vector<ObjectPrototype> default_object_prototypes()
     out.push_back(std::move(p));
   };
 
+  // Marker rect for editor-only annotations
   add("rect", "Rectangle", Sizef(64, 48), Color(255, 200, 50, 160), "",
       [](PropertyBag& d) { d.set("kind", std::string("marker")); });
-  add("spawnpoint", "Spawn point", Sizef(32, 32), Color(80, 220, 120, 180), "",
-      [](PropertyBag& d) { d.set("name", std::string("main")); });
-  add("bonusblock", "Bonus block", Sizef(32, 32), Color(220, 140, 40, 200), "",
+
+  add("ambient_sound", "Ambient sound", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("angrystone", "Angrystone", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("background", "Background", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("bicycle-platform", "Bicycle platform", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("bonusblock", "Bonusblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag& d) {
         d.set("data", 1);
         d.set("script", std::string(""));
       });
-  add("candle", "Candle", Sizef(32, 64), Color(255, 220, 100, 200), "",
-      [](PropertyBag& d) { d.set("burning", true); });
-  add("ghosttree", "Ghost tree", Sizef(96, 128), Color(120, 160, 100, 180), "",
+  add("bouncingsnowball", "Bouncingsnowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("snowball", "Snowball", Sizef(32, 32), Color(220, 230, 255, 200), "",
-      [](PropertyBag& d) { d.set("direction", std::string("auto")); });
-  add("scripttrigger", "Script trigger", Sizef(64, 32), Color(180, 100, 255, 140), "",
+  add("camera", "Camera", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("candle", "Candle", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("burning", true);
+      });
+  add("captainsnowball", "Captainsnowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("climbable", "Climbable", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("coin", "Coin", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("crystallo", "Crystallo", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("darttrap", "Darttrap", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("decal", "Decal", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("dispenser", "Dispenser", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("door", "Door", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("firefly", "Firefly", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("fish", "Fish", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("flame", "Flame", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("flying-platform", "Flying platform", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("flyingsnowball", "Flyingsnowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("ghostflame", "Ghostflame", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("ghosttree", "Ghosttree", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("goldbomb", "Goldbomb", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("gradient", "Gradient", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("haywire", "Haywire", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("hurting_platform", "Hurting platform", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("icecrusher", "Icecrusher", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("iceflame", "Iceflame", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("igel", "Igel", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("infoblock", "Infoblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("message", std::string(""));
+      });
+  add("invisible_wall", "Invisible wall", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("ispy", "Ispy", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("jumpy", "Jumpy", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("direction", std::string("left"));
+      });
+  add("kugelblitz", "Kugelblitz", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("lantern", "Lantern", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("leveltime", "Leveltime", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("time", 300);
+      });
+  add("livefire", "Livefire", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("livefire_asleep", "Livefire asleep", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("livefire_dormant", "Livefire dormant", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("magicblock", "Magicblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mole", "Mole", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mrbomb", "Mrbomb", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mriceblock", "Mriceblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mrtree", "Mrtree", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("owl", "Owl", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("particles-ghosts", "Particles ghosts", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("platform", "Platform", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("pneumatic-platform", "Pneumatic platform", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("poisonivy", "Poisonivy", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("powerup", "Powerup", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("sprite", std::string(""));
+      });
+  add("pushbutton", "Pushbutton", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("rustytrampoline", "Rustytrampoline", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("scriptedobject", "Scriptedobject", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("scripttrigger", "Scripttrigger", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag& d) {
         d.set("script", std::string(""));
         d.set("button", false);
       });
-  add("powerup", "Powerup", Sizef(32, 32), Color(255, 80, 80, 200), "",
-      [](PropertyBag& d) { d.set("sprite", std::string("")); });
-  add("leveltime", "Level time", Sizef(32, 32), Color(100, 100, 255, 160), "",
-      [](PropertyBag& d) { d.set("time", 300); });
-  add("mr_tree", "Mr. Tree", Sizef(64, 64), Color(100, 160, 80, 180), "",
+  add("secretarea", "Secretarea", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("coin", "Coin", Sizef(32, 32), Color(255, 220, 50, 200), "",
+  add("sequencetrigger", "Sequencetrigger", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("heavycoin", "Heavy coin", Sizef(32, 32), Color(255, 200, 40, 200), "",
+  add("short_fuse", "Short fuse", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("rock", "Rock", Sizef(32, 32), Color(140, 120, 100, 200), "",
+  add("skullyhop", "Skullyhop", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("jumpy", "Jumpy", Sizef(32, 32), Color(200, 100, 200, 200), "",
-      [](PropertyBag& d) { d.set("direction", std::string("left")); });
-  add("trampoline", "Trampoline", Sizef(32, 32), Color(80, 200, 120, 200), "",
+  add("smartball", "Smartball", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("invisible_wall", "Invisible wall", Sizef(32, 32), Color(255, 0, 0, 80), "",
+  add("smartblock", "Smartblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
-  add("infoblock", "Info block", Sizef(32, 32), Color(100, 180, 255, 200), "",
-      [](PropertyBag& d) { d.set("message", std::string("")); });
+  add("snail", "Snail", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("snowball", "Snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("direction", std::string("auto"));
+      });
+  add("snowman", "Snowman", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("spawnpoint", "Spawnpoint", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag& d) {
+        d.set("name", std::string("main"));
+      });
+  add("spidermite", "Spidermite", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("spiky", "Spiky", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("spotlight", "Spotlight", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("sspiky", "Sspiky", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("stalactite", "Stalactite", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("stalactite_yeti", "Stalactite yeti", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("stumpy", "Stumpy", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("switch", "Switch", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("thunderstorm", "Thunderstorm", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("toad", "Toad", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("torch", "Torch", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("totem", "Totem", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("trampoline", "Trampoline", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("tux", "Tux", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("walkingleaf", "Walkingleaf", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("walkingtree", "Walkingtree", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("weak_block", "Weak block", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("willowisp", "Willowisp", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("wind", "Wind", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("yeti", "Yeti", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("yeti_stalactite", "Yeti stalactite", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("zeekling", "Zeekling", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
 
-  add("bouncingsnowball", "Bouncing snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("captainsnowball", "Captain snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("flyingsnowball", "Flying snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("mriceblock", "Mr. Iceblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("mrbomb", "Mr. Bomb", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("mrtree", "Mr. Tree", Sizef(64, 64), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("crystallo", "Crystallo", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("fish", "Fish", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("mole", "Mole", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("igel", "Igel", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("haywire", "Haywire", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("icecrusher", "Ice crusher", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("kugelblitz", "Kugelblitz", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("angrystone", "Angry stone", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("goldbomb", "Gold bomb", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("lantern", "Lantern", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("magicblock", "Magic block", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
-  add("ispy", "Ispy", Sizef(32, 32), Color(180, 120, 120, 200), "",
-      [](PropertyBag&) {});
   return out;
 }
 

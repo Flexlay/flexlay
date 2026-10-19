@@ -1064,6 +1064,29 @@ int main(int argc, char* argv[])
   view_menu->addAction(zoom_fit_act);
 
 
+
+  auto* layer_menu = window.menuBar()->addMenu(QStringLiteral("&Layer"));
+  auto* show_all_layers = layer_menu->addAction(QStringLiteral("Show All"));
+  auto* hide_all_layers = layer_menu->addAction(QStringLiteral("Hide All"));
+  QObject::connect(show_all_layers, &QAction::triggered, [workspace, map_widget, layer_selector]() {
+    if (auto* map = workspace->map()) {
+      for (const auto& layer : map->layers()) {
+        if (layer) layer->set_hidden(false);
+      }
+      layer_selector->set_map(workspace->get_map());
+      map_widget->update();
+    }
+  });
+  QObject::connect(hide_all_layers, &QAction::triggered, [workspace, map_widget, layer_selector]() {
+    if (auto* map = workspace->map()) {
+      for (const auto& layer : map->layers()) {
+        if (layer) layer->set_hidden(true);
+      }
+      layer_selector->set_map(workspace->get_map());
+      map_widget->update();
+    }
+  });
+
   auto* sector_menu = window.menuBar()->addMenu(QStringLiteral("&Sector"));
 
   auto refresh_sector_combo = [sector_combo, last_level_meta]() {
