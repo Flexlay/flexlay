@@ -259,6 +259,12 @@ int main(int argc, char* argv[])
   auto* props_dock = new QDockWidget(QStringLiteral("Properties"), &window);
   props_dock->setObjectName(QStringLiteral("properties_dock"));
   auto* props_widget = new flexlay::PropertiesWidget(props_dock);
+  props_widget->set_commit_handler([workspace, map_widget](flexlay::CommandPtr cmd) {
+    if (auto* map = workspace->map()) {
+      map->execute(std::move(cmd));
+    }
+    map_widget->update();
+  });
   props_dock->setWidget(props_widget);
   window.addDockWidget(Qt::RightDockWidgetArea, props_dock);
 

@@ -4,6 +4,8 @@
 
 #include "flexlay/gui/properties_widget.hpp"
 
+#include "flexlay/commands/object_property_command.hpp"
+
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
@@ -11,8 +13,6 @@
 #include <QLineEdit>
 #include <QSpinBox>
 #include <QVBoxLayout>
-
-#include <sstream>
 
 namespace flexlay {
 namespace {
@@ -72,6 +72,20 @@ void PropertiesWidget::refresh()
   rebuild_form();
 }
 
+void PropertiesWidget::commit(CommandPtr cmd)
+{
+  if (!cmd) {
+    return;
+  }
+  // ObjectPropertyCommand is value type from factories — wrap if needed
+  if (m_commit) {
+    m_commit(std::move(cmd));
+  } else {
+    cmd->execute();
+  }
+  emit properties_changed();
+}
+
 void PropertiesWidget::rebuild_form()
 {
   m_block = true;
@@ -93,102 +107,117 @@ void PropertiesWidget::rebuild_form()
     if (m_block || !m_object || !m_name_edit) {
       return;
     }
-    m_object->set_name(m_name_edit->text().toStdString());
-    emit properties_changed();
+    const std::string old_n = m_object->name();
+    const std::string new_n = m_name_edit->text().toStdString();
+    if (old_n == new_n) {
+      return;
+    }
+    auto cmd = std::make_shared<ObjectPropertyCommand>(
+      ObjectPropertyCommand::set_name(m_object, old_n, new_n));
+    if (!cmd->changed()) {
+      return;
+    }
+    commit(cmd);
   });
 
-  // Position (read/write via object API, not bag)
   {
     const Pointf pos = m_object->get_pos();
     auto* x_spin = new QDoubleSpinBox(this);
     x_spin->setRange(-1e6, 1e6);
     x_spin->setDecimals(2);
+    x_spin->setKeyboardTracking(false);
     x_spin->setValue(pos.x);
     auto* y_spin = new QDoubleSpinBox(this);
     y_spin->setRange(-1e6, 1e6);
     y_spin->setDecimals(2);
+    y_spin->setKeyboardTracking(false);
     y_spin->setValue(pos.y);
     m_form->addRow(QStringLiteral("x"), x_spin);
     m_form->addRow(QStringLiteral("y"), y_spin);
+
     auto apply_pos = [this, x_spin, y_spin]() {
       if (m_block || !m_object) {
         return;
       }
-      m_object->set_pos(Pointf(static_cast<float>(x_spin->value()),
-                               static_cast<float>(y_spin->value())));
-      emit properties_changed();
+      const Pointf old_p = m_object->get_pos();
+      const Pointf new_p(static_cast<float>(x_spin->value()),
+                         static_cast<float>(y_spin->value()));
+      if (old_p.x == new_p.x && old_p.y == new_p.y) {
+        return;
+      }
+      auto cmd = std::make_shared<ObjectPropertyCommand>(
+        ObjectPropertyCommand::set_pos(m_object, old_p, new_p));
+      commit(cmd);
     };
-    connect(x_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, apply_pos);
-    connect(y_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, apply_pos);
+    connect(x_spin, &QDoubleSpinBox::editingFinished, this, apply_pos);
+    connect(y_spin, &QDoubleSpinBox::editingFinished, this, apply_pos);
   }
 
   for (const auto& kv : m_object->properties().values()) {
     const QString key = QString::fromStdString(kv.first);
     const PropertyValue& val = kv.second;
+    const std::string key_s = kv.first;
+
+    auto commit_prop = [this, key_s](PropertyValue new_v) {
+      if (m_block || !m_object) {
+        return;
+      }
+      auto old_v = m_object->properties().get(key_s);
+      if (old_v && *old_v == new_v) {
+        return;
+      }
+      auto cmd = std::make_shared<ObjectPropertyCommand>(
+        ObjectPropertyCommand::set_property(m_object, key_s, old_v, std::move(new_v)));
+      commit(cmd);
+    };
 
     if (const auto* b = std::get_if<bool>(&val)) {
       auto* box = new QCheckBox(this);
       box->setChecked(*b);
       m_form->addRow(key, box);
-      connect(box, &QCheckBox::toggled, this, [this, key = kv.first](bool checked) {
-        if (m_block || !m_object) {
-          return;
-        }
-        m_object->properties().set(key, checked);
-        emit properties_changed();
+      connect(box, &QCheckBox::toggled, this, [commit_prop](bool checked) {
+        commit_prop(checked);
       });
     } else if (const auto* i = std::get_if<int>(&val)) {
       auto* spin = new QSpinBox(this);
       spin->setRange(-1000000, 1000000);
+      spin->setKeyboardTracking(false);
       spin->setValue(*i);
       m_form->addRow(key, spin);
-      connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), this,
-              [this, key = kv.first](int v) {
-                if (m_block || !m_object) {
-                  return;
-                }
-                m_object->properties().set(key, v);
-                emit properties_changed();
-              });
+      connect(spin, &QSpinBox::editingFinished, this, [spin, commit_prop]() {
+        commit_prop(spin->value());
+      });
     } else if (const auto* f = std::get_if<float>(&val)) {
       auto* spin = new QDoubleSpinBox(this);
       spin->setRange(-1e6, 1e6);
       spin->setDecimals(3);
+      spin->setKeyboardTracking(false);
       spin->setValue(*f);
       m_form->addRow(key, spin);
-      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this,
-              [this, key = kv.first](double v) {
-                if (m_block || !m_object) {
-                  return;
-                }
-                m_object->properties().set(key, static_cast<float>(v));
-                emit properties_changed();
-              });
+      connect(spin, &QDoubleSpinBox::editingFinished, this, [spin, commit_prop]() {
+        commit_prop(static_cast<float>(spin->value()));
+      });
     } else {
-      // string, color, point — text field
       auto* edit = new QLineEdit(value_to_string(val), this);
       m_form->addRow(key, edit);
-      connect(edit, &QLineEdit::editingFinished, this, [this, key = kv.first, edit, kind = property_type_of(val)]() {
-        if (m_block || !m_object) {
-          return;
-        }
+      const PropertyType kind = property_type_of(val);
+      connect(edit, &QLineEdit::editingFinished, this, [edit, kind, commit_prop]() {
         const QString text = edit->text();
         if (kind == PropertyType::String) {
-          m_object->properties().set(key, text.toStdString());
+          commit_prop(text.toStdString());
         } else if (kind == PropertyType::Color) {
           const auto parts = text.split(QLatin1Char(','));
           if (parts.size() >= 3) {
             Color c(parts[0].toInt(), parts[1].toInt(), parts[2].toInt(),
                     parts.size() >= 4 ? parts[3].toInt() : 255);
-            m_object->properties().set(key, c);
+            commit_prop(c);
           }
         } else if (kind == PropertyType::Point) {
           const auto parts = text.split(QLatin1Char(','));
           if (parts.size() >= 2) {
-            m_object->properties().set(key, Pointf(parts[0].toFloat(), parts[1].toFloat()));
+            commit_prop(Pointf(parts[0].toFloat(), parts[1].toFloat()));
           }
         }
-        emit properties_changed();
       });
     }
   }

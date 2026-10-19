@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-30.1-object-sprites-5ef0589.bundle`
+**Current tip bundle:** `flexlay-31.1-property-undo-5ef0589.bundle`
 
 ---
 
@@ -458,13 +458,19 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - Level load and place tool use datadir when `SUPERTUX_DATADIR` is set
 - **CommandGroup** composite undo (execute forward / undo reverse)
 
+### 2026-10-19 — Undoable property edits
+
+- **ObjectPropertyCommand**: name / position / single PropertyBag entry
+- **PropertiesWidget** commits via `set_commit_handler` → EditorMap::execute
+- Spin boxes use editingFinished (keyboardTracking off) to avoid undo spam
+- simpleed wires handler so Ctrl+Z undoes property changes
+
 ### Concrete next steps
 
-1. ~~Object sprites / default sizes from SuperTux assets~~  
-2. ~~CommandGroup for composite undo~~  
-3. Wire property edits through undo commands  
-4. Sector gravity / ambient-light metadata (optional)  
-5. Load `.sprite` definition files (not only PNG frames)  
+1. ~~Wire property edits through undo commands~~  
+2. Sector gravity / ambient-light metadata (optional)  
+3. Load `.sprite` definition files (not only PNG frames)  
+4. Refresh PropertiesWidget UI after undo/redo  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

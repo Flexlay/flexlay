@@ -21,6 +21,7 @@ set(FLEXLAY_CORE_SOURCES
   src/commands/object_add_command.cpp
   src/commands/object_delete_command.cpp
   src/commands/object_transform_command.cpp
+  src/commands/object_property_command.cpp
   src/tools/tile_paint_tool.cpp
   src/tools/tile_fill_tool.cpp
   src/tools/objmap_select_tool.cpp
