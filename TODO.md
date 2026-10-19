@@ -306,13 +306,19 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **simpleed**: Paint vs Select tools; demo rect objects
 - **test_objects** green
 
+### 2026-10-19 — Object add/delete + flake fix
+
+- **ObjectAddCommand** / **ObjectDeleteCommand**
+- Select tool: **Delete/Backspace** removes selection (undoable)
+- simpleed: **Add rect** button
+- **flake.nix**: `flexlay-nocheck` uses `overridePythonAttrs` (fixes missing `.override`)
+
 ### Concrete next steps
 
-1. ~~Scaffold through paint/undo~~  
-2. ~~Object layer select/move~~  
-3. Object add/delete commands; resize handles  
-4. Multi-tile brushes  
-5. SuperTux + Python embed after simpleed is useful
+1. ~~Scaffold through object CRUD~~  
+2. Resize handles for rects  
+3. Multi-tile brushes  
+4. SuperTux + Python embed after simpleed is useful
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

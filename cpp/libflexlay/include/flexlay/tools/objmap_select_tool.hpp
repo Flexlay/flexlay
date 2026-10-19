@@ -25,6 +25,9 @@ public:
   void on_mouse_move(Workspace& workspace, const Pointf& world_pos, int buttons) override;
   void on_mouse_up(Workspace& workspace, const Pointf& world_pos, int button) override;
 
+  /** Delete currently selected objects (undoable). Returns true if anything deleted. */
+  bool delete_selection(Workspace& workspace);
+
 private:
   std::shared_ptr<ObjectLayer> m_layer;
   bool m_dragging = false;

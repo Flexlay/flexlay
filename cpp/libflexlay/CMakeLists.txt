@@ -10,6 +10,8 @@ set(FLEXLAY_CORE_SOURCES
   src/objmap_rect_object.cpp
   src/commands/paint_command.cpp
   src/commands/object_move_command.cpp
+  src/commands/object_add_command.cpp
+  src/commands/object_delete_command.cpp
   src/tools/tile_paint_tool.cpp
   src/tools/objmap_select_tool.cpp
 )

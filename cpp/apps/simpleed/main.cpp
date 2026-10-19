@@ -9,6 +9,7 @@
 #include "flexlay/tile.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/tileset.hpp"
+#include "flexlay/commands/object_add_command.hpp"
 #include "flexlay/tools/objmap_select_tool.hpp"
 #include "flexlay/tools/tile_paint_tool.hpp"
 #include "flexlay/workspace.hpp"
@@ -97,6 +98,8 @@ int main(int argc, char* argv[])
   auto* select_btn = new QPushButton(QStringLiteral("Select objects"), sidebar);
   side_layout->addWidget(paint_btn);
   side_layout->addWidget(select_btn);
+  auto* add_rect_btn = new QPushButton(QStringLiteral("Add rect"), sidebar);
+  side_layout->addWidget(add_rect_btn);
 
   side_layout->addWidget(new QLabel(QStringLiteral("Tile:"), sidebar));
   auto make_tile_btn = [&](uint32_t id, const QString& label, const QColor& color) {
@@ -130,6 +133,21 @@ int main(int argc, char* argv[])
     workspace->set_tool(select_tool);
     map_widget->setFocus();
   });
+
+  QObject::connect(add_rect_btn, &QPushButton::clicked, [workspace, object_layer, select_tool, editor_map, map_widget]() {
+    workspace->set_tool(select_tool);
+    auto rect = std::make_shared<flexlay::ObjMapRectObject>(
+      flexlay::Pointf(100, 100), flexlay::Sizef(64, 48), flexlay::Color(180, 255, 100, 180));
+    auto cmd = std::make_shared<flexlay::ObjectAddCommand>(object_layer);
+    cmd->add_object(rect);
+    // apply immediately then push (execute will no-op if we mark applied — simpler: just execute)
+    editor_map->execute(cmd);
+    object_layer->clear_selection();
+    rect->set_selected(true);
+    map_widget->update();
+    map_widget->setFocus();
+  });
+
 
   auto update_status = [&]() {
     window.statusBar()->showMessage(

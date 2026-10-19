@@ -4,6 +4,8 @@
 
 #include "flexlay/tools/objmap_select_tool.hpp"
 
+#include "flexlay/commands/object_delete_command.hpp"
+
 namespace flexlay {
 
 void ObjMapSelectTool::on_mouse_down(Workspace& workspace, const Pointf& world_pos, int button)
@@ -60,6 +62,26 @@ void ObjMapSelectTool::on_mouse_up(Workspace& workspace, const Pointf& /*world_p
     }
   }
   m_move_cmd.reset();
+}
+
+
+bool ObjMapSelectTool::delete_selection(Workspace& workspace)
+{
+  if (!m_layer) {
+    return false;
+  }
+  auto selected = m_layer->selected_objects();
+  if (selected.empty()) {
+    return false;
+  }
+  auto cmd = std::make_shared<ObjectDeleteCommand>(m_layer);
+  for (auto& obj : selected) {
+    cmd->add_object(obj);
+  }
+  if (auto* map = workspace.map()) {
+    map->execute(cmd);
+  }
+  return true;
 }
 
 } // namespace flexlay

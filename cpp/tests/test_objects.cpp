@@ -2,6 +2,8 @@
 // Copyright (C) 2026 Ingo Ruhnke <grumbel@gmail.com>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "flexlay/commands/object_add_command.hpp"
+#include "flexlay/commands/object_delete_command.hpp"
 #include "flexlay/commands/object_move_command.hpp"
 #include "flexlay/editor_map.hpp"
 #include "flexlay/object_layer.hpp"
@@ -41,6 +43,21 @@ int main()
   CHECK(rect->get_pos() == Pointf(10, 20));
   map->redo();
   CHECK(rect->get_pos() == Pointf(15, 27));
+
+  auto del = std::make_shared<ObjectDeleteCommand>(layer);
+  del->add_object(rect);
+  map->execute(del);
+  CHECK(layer->objects().empty());
+  map->undo();
+  CHECK(layer->objects().size() == 1);
+
+  auto extra = std::make_shared<ObjMapRectObject>(Pointf(0, 0), Sizef(10, 10), Color(0, 255, 0));
+  auto add = std::make_shared<ObjectAddCommand>(layer);
+  add->add_object(extra);
+  map->execute(add);
+  CHECK(layer->objects().size() == 2);
+  map->undo();
+  CHECK(layer->objects().size() == 1);
 
   std::cout << "test_objects: ok\n";
   return 0;

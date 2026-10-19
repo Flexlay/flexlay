@@ -4,6 +4,7 @@
 
 #include "flexlay/editor_map_widget.hpp"
 #include "flexlay/qt_graphic_context.hpp"
+#include "flexlay/tools/objmap_select_tool.hpp"
 
 #include <algorithm>
 
@@ -180,6 +181,18 @@ void EditorMapWidget::keyPressEvent(QKeyEvent* event)
     event->accept();
     return;
   }
+
+  if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+    if (auto select = std::dynamic_pointer_cast<ObjMapSelectTool>(m_workspace->tool())) {
+      if (select->delete_selection(*m_workspace)) {
+        update();
+        emit map_changed();
+        event->accept();
+        return;
+      }
+    }
+  }
+
   QWidget::keyPressEvent(event);
 }
 

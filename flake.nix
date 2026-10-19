@@ -76,9 +76,11 @@
             ];
           };
 
-          flexlay-nocheck = flexlay.override {
+          # Prefer overridePythonAttrs: .override is not always present on
+          # buildPythonPackage results (nixpkgs changes / pure drv path).
+          flexlay-nocheck = flexlay.overridePythonAttrs (_old: {
             doCheck = false;
-          };
+          });
 
           default = flexlay;
         };
