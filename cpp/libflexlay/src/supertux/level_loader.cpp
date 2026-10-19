@@ -191,8 +191,34 @@ LoadedObject parse_object(const SExpr& node)
   return obj;
 }
 
-void collect_objects(const SExpr& objects_node, std::vector<LoadedTilemap>& tilemaps,
-                     std::vector<LoadedObject>& objects)
+void parse_ambient_light(const SExpr& node, LoadedLevel& level)
+{
+  // (ambient-light 1 1 1 1) or (ambient-light (color 1 1 1 1))
+  const SExpr* color = find_child(node, "color");
+  const SExpr* src = color ? color : &node;
+  if (!src->is_list() || src->as_list().size() < 2) {
+    return;
+  }
+  std::vector<float> comps;
+  for (size_t i = 1; i < src->as_list().size(); ++i) {
+    if (!src->as_list()[i].is_atom()) {
+      continue;
+    }
+    try {
+      comps.push_back(std::stof(src->as_list()[i].as_atom()));
+    } catch (...) {
+    }
+  }
+  if (comps.size() >= 3) {
+    level.ambient_r = comps[0];
+    level.ambient_g = comps[1];
+    level.ambient_b = comps[2];
+    level.ambient_a = comps.size() >= 4 ? comps[3] : 1.0f;
+    level.has_ambient_light = true;
+  }
+}
+
+void collect_objects(const SExpr& objects_node, LoadedLevel& level)
 {
   if (!objects_node.is_list()) {
     return;
@@ -204,13 +230,27 @@ void collect_objects(const SExpr& objects_node, std::vector<LoadedTilemap>& tile
     }
     const std::string tag = obj.tag();
     if (tag == "tilemap") {
-      tilemaps.push_back(parse_tilemap(obj));
+      level.tilemaps.push_back(parse_tilemap(obj));
+      continue;
+    }
+    if (tag == "gravity") {
+      if (obj.as_list().size() >= 2 && obj.as_list()[1].is_atom()) {
+        try {
+          level.gravity = std::stof(obj.as_list()[1].as_atom());
+          level.has_gravity = true;
+        } catch (...) {
+        }
+      }
+      continue;
+    }
+    if (tag == "ambient-light") {
+      parse_ambient_light(obj, level);
       continue;
     }
     if (is_skipped_object_tag(tag) || tag.empty()) {
       continue;
     }
-    objects.push_back(parse_object(obj));
+    level.objects.push_back(parse_object(obj));
   }
 }
 
@@ -246,7 +286,7 @@ LoadedLevel load_level_text(const std::string& text)
     level.sector_name = child_atom(sector, "name", "main");
     const SExpr* objects = find_child(sector, "objects");
     if (objects) {
-      collect_objects(*objects, level.tilemaps, level.objects);
+      collect_objects(*objects, level);
     }
     break;
   }

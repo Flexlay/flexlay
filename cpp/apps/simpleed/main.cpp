@@ -417,6 +417,10 @@ int main(int argc, char* argv[])
         .arg(editor_map->undo_stack_size()));
   };
   QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, update_status);
+  QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, [props_widget]() {
+    // After undo/redo, rebuild form so fields match object state
+    props_widget->refresh();
+  });
   update_status();
 
 

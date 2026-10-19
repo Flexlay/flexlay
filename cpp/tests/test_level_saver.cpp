@@ -30,6 +30,8 @@ int main()
         (sector
           (name "main")
           (objects
+            (gravity 12.5)
+            (ambient-light 0.5 0.6 0.7 1)
             (tilemap
               (name "ground")
               (solid #t)
@@ -66,6 +68,12 @@ int main()
   CHECK(again.contact == "test@example.com");
   CHECK(again.tileset_path == "images/tiles.stts");
   CHECK(again.target_time == 120);
+  CHECK(again.has_gravity);
+  CHECK(again.gravity == 12.5f);
+  CHECK(again.has_ambient_light);
+  CHECK(again.ambient_r == 0.5f);
+  CHECK(again.ambient_g == 0.6f);
+  CHECK(again.ambient_b == 0.7f);
   CHECK(again.tilemaps.size() == 1);
   CHECK(again.tilemaps[0].width == 2);
   CHECK(again.tilemaps[0].solid == true);
@@ -84,6 +92,9 @@ int main()
   auto from_map = supertux::level_from_editor_map(*map, "FromMap", "main", 4, &level);
   CHECK(from_map.author == "Test Author");
   CHECK(from_map.tileset_path == "images/tiles.stts");
+  CHECK(from_map.has_gravity);
+  CHECK(from_map.gravity == 12.5f);
+  CHECK(from_map.has_ambient_light);
   CHECK(from_map.tilemaps.size() == 1);
   CHECK(from_map.objects.size() == 2);
   const std::string text2 = supertux::save_level_text(from_map);

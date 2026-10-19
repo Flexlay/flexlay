@@ -56,6 +56,15 @@ struct LoadedLevel
   std::string tileset_path; // e.g. "images/tiles.stts"
   int target_time = 0;      // 0 = unset
   std::string sector_name;
+  /** Sector gravity (SuperTux default 10). */
+  float gravity = 10.0f;
+  /** Sector ambient light RGBA in 0..1 (default white). */
+  float ambient_r = 1.0f;
+  float ambient_g = 1.0f;
+  float ambient_b = 1.0f;
+  float ambient_a = 1.0f;
+  bool has_ambient_light = false;
+  bool has_gravity = false;
   std::vector<LoadedTilemap> tilemaps;
   std::vector<LoadedObject> objects;
 };

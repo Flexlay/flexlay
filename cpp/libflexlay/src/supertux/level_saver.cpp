@@ -106,6 +106,16 @@ std::string save_level_text(const LoadedLevel& level)
   write_indent(out, 3);
   out << "(objects\n";
 
+  if (level.has_gravity) {
+    write_indent(out, 4);
+    out << "(gravity " << level.gravity << ")\n";
+  }
+  if (level.has_ambient_light) {
+    write_indent(out, 4);
+    out << "(ambient-light " << level.ambient_r << " " << level.ambient_g << " "
+        << level.ambient_b << " " << level.ambient_a << ")\n";
+  }
+
   for (const auto& tm : level.tilemaps) {
     write_indent(out, 4);
     out << "(tilemap\n";
@@ -207,6 +217,13 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
     level.contact = meta->contact;
     level.tileset_path = meta->tileset_path;
     level.target_time = meta->target_time;
+    level.gravity = meta->gravity;
+    level.has_gravity = meta->has_gravity;
+    level.ambient_r = meta->ambient_r;
+    level.ambient_g = meta->ambient_g;
+    level.ambient_b = meta->ambient_b;
+    level.ambient_a = meta->ambient_a;
+    level.has_ambient_light = meta->has_ambient_light;
     if (level.sector_name == "main" && !meta->sector_name.empty()) {
       level.sector_name = meta->sector_name;
     }

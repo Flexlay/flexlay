@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-31.1-property-undo-5ef0589.bundle`
+**Current tip bundle:** `flexlay-32.1-sector-meta-props-refresh-5ef0589.bundle`
 
 ---
 
@@ -465,12 +465,19 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - Spin boxes use editingFinished (keyboardTracking off) to avoid undo spam
 - simpleed wires handler so Ctrl+Z undoes property changes
 
+### 2026-10-19 — Sector meta + props refresh after undo
+
+- **LoadedLevel**: gravity + ambient-light (RGBA 0..1) with has_* flags
+- Loader reads `(gravity …)` / `(ambient-light …)` from sector objects
+- Saver writes them back; meta merge preserves on Open→Save
+- simpleed: **map_changed** (incl. Ctrl+Z/Y) calls `PropertiesWidget::refresh`
+
 ### Concrete next steps
 
-1. ~~Wire property edits through undo commands~~  
-2. Sector gravity / ambient-light metadata (optional)  
+1. ~~Sector gravity / ambient-light metadata~~  
+2. ~~Refresh PropertiesWidget UI after undo/redo~~  
 3. Load `.sprite` definition files (not only PNG frames)  
-4. Refresh PropertiesWidget UI after undo/redo  
+4. Sector name list / multi-sector support  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 
