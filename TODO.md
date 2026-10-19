@@ -347,10 +347,17 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **TilePaintTool** brush size 1–16; grid-aligned drag
 - simpleed: brush size buttons 1/2/3/5
 
+### 2026-10-19 — Copy brush from region
+
+- **TileBrush::from_field**
+- **TilePaintTool**: RMB-drag selects tile rect → becomes brush (transparent zeros)
+- Selection overlay while dragging
+- simpleed status shows brush WxH
+
 ### Concrete next steps
 
-1. ~~Scaffold through brushes~~  
-2. Tile selector UI / copy brush from map region  
+1. ~~Scaffold through copy-brush~~  
+2. Flood fill tool  
 3. Sprite objects / pixel buffer load  
 4. SuperTux + Python embed after simpleed is useful
 

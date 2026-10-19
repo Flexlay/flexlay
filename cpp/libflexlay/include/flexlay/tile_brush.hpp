@@ -7,6 +7,7 @@
 
 #include "flexlay/field.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -19,9 +20,9 @@ public:
   TileBrush() : m_width(1), m_height(1), m_data(1, 0) {}
 
   TileBrush(int width, int height)
-    : m_width(width)
-    , m_height(height)
-    , m_data(static_cast<size_t>(width * height), 0)
+    : m_width(std::max(1, width))
+    , m_height(std::max(1, height))
+    , m_data(static_cast<size_t>(m_width * m_height), 0)
   {
   }
 
@@ -33,14 +34,32 @@ public:
     return b;
   }
 
-  /** Filled rectangle of the same tile id. */
   static TileBrush filled(int width, int height, uint32_t tile_id, bool opaque = true)
   {
     TileBrush b(width, height);
-    for (int i = 0; i < width * height; ++i) {
+    for (int i = 0; i < b.m_width * b.m_height; ++i) {
       b.m_data[static_cast<size_t>(i)] = tile_id;
     }
     b.m_opaque = opaque;
+    return b;
+  }
+
+  /** Copy a region from a field (top-left x,y size w×h). Transparent zeros. */
+  static TileBrush from_field(const Field& field, int x, int y, int w, int h)
+  {
+    w = std::max(1, w);
+    h = std::max(1, h);
+    TileBrush b(w, h);
+    for (int iy = 0; iy < h; ++iy) {
+      for (int ix = 0; ix < w; ++ix) {
+        const int sx = x + ix;
+        const int sy = y + iy;
+        if (sx >= 0 && sy >= 0 && sx < field.width() && sy < field.height()) {
+          b.put(ix, iy, field.at(sx, sy));
+        }
+      }
+    }
+    b.set_opaque(false);
     return b;
   }
 

@@ -74,6 +74,20 @@ int main()
   CHECK(layer->field().at(0, 2) == 1);
   CHECK(layer->field().at(1, 2) == 2); // unchanged
 
+  // Copy brush from field region
+  layer->field().put(2, 2, 1);
+  layer->field().put(3, 2, 1);
+  layer->field().put(2, 3, 0);
+  layer->field().put(3, 3, 1);
+  auto copied = TileBrush::from_field(layer->field(), 2, 2, 2, 2);
+  CHECK(copied.width() == 2);
+  CHECK(copied.height() == 2);
+  CHECK(copied.at(0, 0) == 1);
+  CHECK(copied.at(1, 0) == 1);
+  CHECK(copied.at(0, 1) == 0);
+  CHECK(copied.at(1, 1) == 1);
+  CHECK(!copied.is_opaque());
+
   std::cout << "test_paint: ok\n";
   return 0;
 }

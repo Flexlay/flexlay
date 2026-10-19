@@ -161,8 +161,9 @@ int main(int argc, char* argv[])
 
   auto update_status = [&]() {
     window.statusBar()->showMessage(
-      QStringLiteral("Paint/Select | LMB edit | MMB pan | Wheel | Ctrl+Z/Y | brush=%1x%1 tile=%2 | undo=%3")
-        .arg(paint_tool->brush_size())
+      QStringLiteral("LMB paint | RMB-drag copy brush | MMB pan | Wheel | Ctrl+Z/Y | brush=%1x%2 tile=%3 | undo=%4")
+        .arg(paint_tool->brush().width())
+        .arg(paint_tool->brush().height())
         .arg(paint_tool->tile_id())
         .arg(editor_map->undo_stack_size()));
   };
