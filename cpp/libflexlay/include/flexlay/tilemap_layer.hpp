@@ -42,6 +42,9 @@ public:
   int pixel_width() const { return m_field.width() * m_tileset->get_tile_size(); }
   int pixel_height() const { return m_field.height() * m_tileset->get_tile_size(); }
 
+  /** Resize tile field; (ox,oy) shift like Python Field.resize. */
+  void resize(int w, int h, int ox = 0, int oy = 0);
+
 private:
   std::shared_ptr<Tileset> m_tileset;
   Field m_field;

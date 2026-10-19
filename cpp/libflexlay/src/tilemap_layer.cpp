@@ -85,4 +85,12 @@ void TilemapLayer::draw(GraphicContext& gc, const Point& pos)
   }
 }
 
+void TilemapLayer::resize(int w, int h, int ox, int oy)
+{
+  if (w <= 0 || h <= 0) {
+    return;
+  }
+  m_field.resize(w, h, ox, oy);
+}
+
 } // namespace flexlay

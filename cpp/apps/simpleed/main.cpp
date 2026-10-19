@@ -31,6 +31,8 @@
 
 
 #include <QApplication>
+#include <QCoreApplication>
+#include <QDir>
 #include <QAction>
 #include <QActionGroup>
 #include <QKeySequence>
@@ -51,6 +53,11 @@
 #include <QDockWidget>
 #include <QScrollArea>
 #include <QSettings>
+#include <QProcess>
+#include <QSpinBox>
+#include <QFormLayout>
+#include <QDialogButtonBox>
+#include <QDialog>
 #include <QVariant>
 
 #include <memory>
@@ -180,7 +187,18 @@ int main(int argc, char* argv[])
     print_help(argc > 0 ? argv[0] : nullptr);
     return 0;
   }
+  // Persist datadir across runs (CLI / env still win when set)
+  {
+    QSettings settings(QStringLiteral("Flexlay"), QStringLiteral("SuperTuxEditor"));
+    if (options.datadir.empty()) {
+      options.datadir = settings.value(QStringLiteral("datadir")).toString().toStdString();
+    }
+  }
   options.datadir = resolve_datadir(std::move(options.datadir), options.verbose);
+  if (!options.datadir.empty()) {
+    QSettings settings(QStringLiteral("Flexlay"), QStringLiteral("SuperTuxEditor"));
+    settings.setValue(QStringLiteral("datadir"), QString::fromStdString(options.datadir));
+  }
   log_startup(options);
 
   QApplication app(argc, argv);
@@ -615,6 +633,8 @@ int main(int argc, char* argv[])
 
 
   auto* file_menu = window.menuBar()->addMenu(QStringLiteral("&File"));
+  auto* new_act = file_menu->addAction(QStringLiteral("New Level"));
+  new_act->setShortcut(QKeySequence::New);
   auto* open_act = file_menu->addAction(QStringLiteral("Open…"));
   open_act->setShortcut(QKeySequence::Open);
   auto* recent_menu = file_menu->addMenu(QStringLiteral("Open Recent"));
@@ -641,8 +661,80 @@ int main(int argc, char* argv[])
   auto supertux_datadir = std::make_shared<std::string>(options.datadir);
   place_tool->set_datadir(*supertux_datadir);
   obj_selector->set_datadir(*supertux_datadir);
+
   auto last_level_name = std::make_shared<std::string>("unnamed");
   auto last_level_meta = std::make_shared<flexlay::supertux::LoadedLevel>();
+
+  QObject::connect(new_act, &QAction::triggered, [&, workspace, map_widget, paint_tool, fill_tool,
+                   select_tool, place_tool, tile_selector, layer_selector, props_widget,
+                   group_combo, sector_combo, current_tileset, tilegroups, last_level_name,
+                   last_level_meta, paint_act, grid_act, minimap]() {
+    constexpr int nw = 100;
+    constexpr int nh = 25;
+    const int ts = tile_size;
+    auto ts_ptr = *current_tileset;
+    if (!ts_ptr) {
+      ts_ptr = std::make_shared<flexlay::Tileset>(ts);
+    }
+    auto new_map = std::make_shared<flexlay::EditorMap>();
+    new_map->set_background_color(flexlay::Color(100, 150, 200));
+    new_map->set_draw_grid(true);
+    new_map->set_bounding_rect(flexlay::Rectf(0, 0, static_cast<float>(nw * ts),
+                                              static_cast<float>(nh * ts)));
+    auto make_tm = [&](const char* name, bool solid, int /*z*/) {
+      auto layer = std::make_shared<flexlay::TilemapLayer>(ts_ptr, nw, nh);
+      std::string nm = name;
+      if (solid) nm += " [solid]";
+      layer->set_name(nm);
+      layer->set_draw_grid(true);
+      new_map->add_layer(layer);
+      return layer;
+    };
+    make_tm("background", false, -100);
+    auto solid = make_tm("interactive", true, 0);
+    make_tm("foreground", false, 100);
+    auto ol = std::make_shared<flexlay::ObjectLayer>();
+    ol->set_name("objects");
+    // default spawnpoint
+    flexlay::PropertyBag sp;
+    sp.set("type", std::string("spawnpoint"));
+    sp.set("name", std::string("main"));
+    auto spawn = flexlay::supertux::make_editor_object(
+      "spawnpoint",
+      flexlay::Pointf(5 * 32.0f, static_cast<float>(nh) * 3.0f / 4.0f * 32.0f),
+      32, 32, sp, *supertux_datadir);
+    ol->add_object(spawn);
+    new_map->add_layer(ol);
+    workspace->set_map(new_map);
+    paint_tool->set_tilemap(solid);
+    fill_tool->set_tilemap(solid);
+    select_tool->set_object_layer(ol);
+    place_tool->set_object_layer(ol);
+    tile_selector->set_tileset(ts_ptr);
+    *current_tileset = ts_ptr;
+    layer_selector->set_map(new_map);
+    props_widget->clear();
+    sector_combo->blockSignals(true);
+    sector_combo->clear();
+    sector_combo->addItem(QStringLiteral("main"));
+    sector_combo->setEnabled(false);
+    sector_combo->blockSignals(false);
+    *last_level_name = "unnamed";
+    *last_level_meta = flexlay::supertux::LoadedLevel{};
+    last_level_meta->name = "unnamed";
+    last_level_meta->version = 4;
+    last_level_meta->sectors.push_back(flexlay::supertux::LoadedSector{});
+    last_level_meta->sectors[0].name = "main";
+    last_level_meta->active_sector = 0;
+    paint_act->setChecked(true);
+    workspace->set_tool(paint_tool);
+    grid_act->setChecked(true);
+    map_widget->update();
+    if (minimap) minimap->update();
+    window.setWindowTitle(QStringLiteral("SuperTux Editor — unnamed"));
+    window.statusBar()->showMessage(QStringLiteral("New level %1×%2").arg(nw).arg(nh));
+  });
+
 
   QObject::connect(open_act, &QAction::triggered, [&]() {
     QString path = open_act->property("pendingPath").toString();
@@ -821,6 +913,133 @@ int main(int argc, char* argv[])
   });
   QObject::connect(redo_act, &QAction::triggered, [workspace, map_widget]() {
     if (auto* map = workspace->map()) { map->redo(); map_widget->update(); }
+  });
+
+  edit_menu->addSeparator();
+  auto* resize_act = edit_menu->addAction(QStringLiteral("Resize Sector…"));
+  QObject::connect(resize_act, &QAction::triggered, [&, workspace, map_widget, paint_tool, fill_tool, layer_selector]() {
+    auto map = workspace->get_map();
+    if (!map) {
+      return;
+    }
+    int cur_w = 0;
+    int cur_h = 0;
+    for (const auto& layer : map->layers()) {
+      if (auto* tm = dynamic_cast<flexlay::TilemapLayer*>(layer.get())) {
+        cur_w = std::max(cur_w, tm->width());
+        cur_h = std::max(cur_h, tm->height());
+      }
+    }
+    if (cur_w <= 0) {
+      cur_w = 100;
+      cur_h = 50;
+    }
+    QDialog dlg(&window);
+    dlg.setWindowTitle(QStringLiteral("Resize Sector"));
+    auto* form = new QFormLayout(&dlg);
+    auto* w_spin = new QSpinBox(&dlg);
+    w_spin->setRange(1, 2000);
+    w_spin->setValue(cur_w);
+    auto* h_spin = new QSpinBox(&dlg);
+    h_spin->setRange(1, 2000);
+    h_spin->setValue(cur_h);
+    auto* x_spin = new QSpinBox(&dlg);
+    x_spin->setRange(-500, 500);
+    x_spin->setValue(0);
+    auto* y_spin = new QSpinBox(&dlg);
+    y_spin->setRange(-500, 500);
+    y_spin->setValue(0);
+    form->addRow(QStringLiteral("Width:"), w_spin);
+    form->addRow(QStringLiteral("Height:"), h_spin);
+    form->addRow(QStringLiteral("X offset:"), x_spin);
+    form->addRow(QStringLiteral("Y offset:"), y_spin);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    form->addRow(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) {
+      return;
+    }
+    const int nw = w_spin->value();
+    const int nh = h_spin->value();
+    const int ox = x_spin->value();
+    const int oy = y_spin->value();
+    const int ts = 32;
+    for (const auto& layer : map->layers()) {
+      if (auto* tm = dynamic_cast<flexlay::TilemapLayer*>(layer.get())) {
+        tm->resize(nw, nh, ox, oy);
+      }
+      if (auto* ol = dynamic_cast<flexlay::ObjectLayer*>(layer.get())) {
+        for (const auto& obj : ol->objects()) {
+          if (!obj) continue;
+          auto p = obj->get_pos();
+          p.x += static_cast<float>(ox * ts);
+          p.y += static_cast<float>(oy * ts);
+          obj->set_pos(p);
+        }
+      }
+    }
+    map->set_bounding_rect(flexlay::Rectf(
+      0, 0, static_cast<float>(nw * ts), static_cast<float>(nh * ts)));
+    map->set_modified(true);
+    map->bump_serial();
+    layer_selector->set_map(map);
+    for (const auto& layer : map->layers()) {
+      if (auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer)) {
+        if (tml->get_name().find("[solid]") != std::string::npos) {
+          paint_tool->set_tilemap(tml);
+          fill_tool->set_tilemap(tml);
+          break;
+        }
+      }
+    }
+    map_widget->update();
+    window.statusBar()->showMessage(
+      QStringLiteral("Resized sector to %1×%2 (offset %3,%4)").arg(nw).arg(nh).arg(ox).arg(oy));
+  });
+
+  auto* run_act = edit_menu->addAction(QStringLiteral("Run Level…"));
+  run_act->setShortcut(QKeySequence(QStringLiteral("F5")));
+  QObject::connect(run_act, &QAction::triggered, [&, workspace, last_level_name, last_level_meta, supertux_datadir]() {
+    auto map = workspace->get_map();
+    if (!map) {
+      return;
+    }
+    QSettings settings(QStringLiteral("Flexlay"), QStringLiteral("SuperTuxEditor"));
+    QString binary = settings.value(QStringLiteral("supertuxBinary")).toString();
+    if (binary.isEmpty()) {
+      binary = QFileDialog::getOpenFileName(
+        &window, QStringLiteral("Select SuperTux binary"), QString(), QStringLiteral("All (*)"));
+      if (binary.isEmpty()) {
+        return;
+      }
+      settings.setValue(QStringLiteral("supertuxBinary"), binary);
+    }
+    // Save to temp file and launch
+    try {
+      const std::string sec = last_level_meta->sector_name();
+      auto level = flexlay::supertux::level_from_editor_map(
+        *map, *last_level_name, sec.empty() ? "main" : sec,
+        last_level_meta->version > 0 ? last_level_meta->version : 4,
+        last_level_meta.get());
+      const QString tmp = QStringLiteral("%1/flexlay-run-%2.stlv")
+        .arg(QDir::tempPath())
+        .arg(QCoreApplication::applicationPid());
+      flexlay::supertux::save_level_file(level, tmp.toStdString());
+      QStringList args;
+      if (!supertux_datadir->empty()) {
+        args << QStringLiteral("--datadir") << QString::fromStdString(*supertux_datadir);
+      }
+      args << tmp;
+      if (!QProcess::startDetached(binary, args)) {
+        QMessageBox::warning(&window, QStringLiteral("Run Level"),
+                             QStringLiteral("Failed to start: %1").arg(binary));
+      } else {
+        window.statusBar()->showMessage(QStringLiteral("Launched SuperTux with %1").arg(tmp));
+      }
+    } catch (const std::exception& ex) {
+      QMessageBox::warning(&window, QStringLiteral("Run Level"), QString::fromUtf8(ex.what()));
+    }
   });
 
   auto* view_menu = window.menuBar()->addMenu(QStringLiteral("&View"));

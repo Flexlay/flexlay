@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-38.1-minimap-objects-recent-5ef0589.bundle`
+**Current tip bundle:** `flexlay-39.1-new-resize-run-5ef0589.bundle`
 
 ---
 
@@ -538,6 +538,14 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - **Object selector** loads 32×32 icons from datadir sprites when available
 - More prototypes: coin, heavycoin, rock, jumpy, trampoline, invisible_wall, infoblock
 - **File → Open Recent** (QSettings, last 10 paths)
+
+### 2026-10-19 — New level, sector resize, run level
+
+- **File → New Level**: 100×25 background/interactive/foreground + main spawn (like Python)
+- **Edit → Resize Sector…**: width/height + X/Y offset (tilemaps + objects)
+- **Edit → Run Level… (F5)**: save temp .stlv, launch SuperTux binary (path in QSettings)
+- **Datadir persistence** via QSettings when not overridden by CLI/env
+- `TilemapLayer::resize` wraps `Field::resize`
 
 ### Concrete next steps
 
