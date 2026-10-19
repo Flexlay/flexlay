@@ -328,6 +328,12 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - CMake **install** rules for lib + headers + binary
 - Python `flexlay` / `flexlay-nocheck` unchanged
 
+### 2026-10-19 — CMake Qt find_package scope
+
+- `find_package(Qt6)` moved to **top-level** `cpp/CMakeLists.txt`
+- `flexlay-simpleed` links only `flexlay::flexlay` (Qt via PUBLIC)
+- Fixes: `Target "flexlay-simpleed" links to Qt6::Core but the target was not found`
+
 ### Concrete next steps
 
 1. ~~Scaffold through object CRUD + resize + flake~~  

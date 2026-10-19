@@ -28,9 +28,8 @@ target_include_directories(flexlay
 
 target_compile_features(flexlay PUBLIC cxx_std_17)
 
+# Qt is found by the top-level CMakeLists when FLEXLAY_BUILD_SIMPLEED is ON.
 if(FLEXLAY_BUILD_SIMPLEED)
-  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
-  set(CMAKE_AUTOMOC ON)
   target_sources(flexlay PRIVATE src/editor_map_widget.cpp)
   target_link_libraries(flexlay PUBLIC Qt6::Core Qt6::Gui Qt6::Widgets)
   target_compile_definitions(flexlay PUBLIC FLEXLAY_HAS_QT=1)

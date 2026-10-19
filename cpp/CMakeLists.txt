@@ -12,10 +12,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(FLEXLAY_BUILD_TESTS "Build unit tests" ON)
 option(FLEXLAY_BUILD_SIMPLEED "Build the simpleed demo application" ON)
 
+# Find Qt once at the top level so all targets see Qt6::* IMPORTED targets.
+if(FLEXLAY_BUILD_SIMPLEED)
+  set(CMAKE_AUTOMOC ON)
+  find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+endif()
+
 add_subdirectory(libflexlay)
 
 if(FLEXLAY_BUILD_SIMPLEED)
-  set(CMAKE_AUTOMOC ON)
   add_subdirectory(apps/simpleed)
 endif()
 
