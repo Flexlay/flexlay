@@ -43,6 +43,18 @@ const std::unordered_map<std::string, ObjectVisualInfo>& visual_table()
     {"leveltime", {"engine/editor/clock.png", Sizef(32, 32)}},
     {"scripttrigger", {"engine/editor/point.png", Sizef(64, 32)}},
     {"decal", {"engine/editor/decal.png", Sizef(32, 32)}},
+    {"coin", {"objects/coin/coin.png", Sizef(32, 32)}},
+    {"heavycoin", {"objects/coin/heavy_coin.png", Sizef(32, 32)}},
+    {"rock", {"tiles/blocks/block11.png", Sizef(32, 32)}},
+    {"jumpy", {"creatures/jumpy/left-0.png", Sizef(32, 32)}},
+    {"stalactite", {"creatures/stalactite/falling.png", Sizef(32, 64)}},
+    {"flame", {"creatures/flame/flame-0.png", Sizef(32, 32)}},
+    {"darttrap", {"creatures/darttrap/darter1-left.png", Sizef(32, 32)}},
+    {"dispenser", {"creatures/dispenser/canon.png", Sizef(32, 32)}},
+    {"ispy", {"creatures/ispy/idle1.png", Sizef(32, 32)}},
+    {"trampoline", {"objects/trampoline/trampoline1-left.png", Sizef(32, 32)}},
+    {"invisible_wall", {"engine/editor/invisible_wall.png", Sizef(32, 32)}},
+    {"weak_block", {"objects/weak_block/strawbox-empty.png", Sizef(32, 32)}},
   };
   return table;
 }

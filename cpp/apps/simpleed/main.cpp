@@ -25,6 +25,7 @@
 #include "flexlay/gui/layer_selector_widget.hpp"
 #include "flexlay/object_prototype.hpp"
 #include "flexlay/gui/object_selector_widget.hpp"
+#include "flexlay/gui/minimap_widget.hpp"
 #include "flexlay/gui/properties_widget.hpp"
 #include "flexlay/tile_brush.hpp"
 
@@ -49,6 +50,7 @@
 #include <QComboBox>
 #include <QDockWidget>
 #include <QScrollArea>
+#include <QSettings>
 #include <QVariant>
 
 #include <memory>
@@ -436,6 +438,13 @@ int main(int argc, char* argv[])
   layer_dock->setWidget(layer_selector);
   window.addDockWidget(Qt::LeftDockWidgetArea, layer_dock);
 
+  auto* minimap_dock = new QDockWidget(QStringLiteral("Minimap"), &window);
+  minimap_dock->setObjectName(QStringLiteral("minimap_dock"));
+  auto* minimap = new flexlay::MinimapWidget(minimap_dock);
+  minimap->set_workspace(workspace);
+  minimap_dock->setWidget(minimap);
+  window.addDockWidget(Qt::LeftDockWidgetArea, minimap_dock);
+
   QObject::connect(layer_selector, &flexlay::LayerSelectorWidget::tilemap_activated,
                    [paint_tool, fill_tool, workspace, map_widget](std::shared_ptr<flexlay::TilemapLayer> tm) {
                      paint_tool->set_tilemap(tm);
@@ -595,6 +604,9 @@ int main(int argc, char* argv[])
         .arg(editor_map->undo_stack_size()));
   };
   QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, update_status);
+  QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, [minimap]() {
+    minimap->update();
+  });
   QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, [props_widget]() {
     // After undo/redo, rebuild form so fields match object state
     props_widget->refresh();
@@ -605,16 +617,41 @@ int main(int argc, char* argv[])
   auto* file_menu = window.menuBar()->addMenu(QStringLiteral("&File"));
   auto* open_act = file_menu->addAction(QStringLiteral("Open…"));
   open_act->setShortcut(QKeySequence::Open);
+  auto* recent_menu = file_menu->addMenu(QStringLiteral("Open Recent"));
+  auto rebuild_recent = [recent_menu, open_act]() {
+    recent_menu->clear();
+    QSettings settings(QStringLiteral("Flexlay"), QStringLiteral("SuperTuxEditor"));
+    const QStringList recent = settings.value(QStringLiteral("recentFiles")).toStringList();
+    if (recent.isEmpty()) {
+      auto* empty = recent_menu->addAction(QStringLiteral("(empty)"));
+      empty->setEnabled(false);
+      return;
+    }
+    for (const QString& path : recent) {
+      auto* a = recent_menu->addAction(path);
+      QObject::connect(a, &QAction::triggered, open_act, [open_act, path]() {
+        // Stash path for open handler via action data
+        open_act->setProperty("pendingPath", path);
+        open_act->trigger();
+      });
+    }
+  };
+  rebuild_recent();
   // Shared so Open Level / sector switch see the same resolved path
   auto supertux_datadir = std::make_shared<std::string>(options.datadir);
   place_tool->set_datadir(*supertux_datadir);
+  obj_selector->set_datadir(*supertux_datadir);
   auto last_level_name = std::make_shared<std::string>("unnamed");
   auto last_level_meta = std::make_shared<flexlay::supertux::LoadedLevel>();
 
   QObject::connect(open_act, &QAction::triggered, [&]() {
-    const QString path = QFileDialog::getOpenFileName(
-      &window, QStringLiteral("Open SuperTux Level"),
-      QString(), QStringLiteral("SuperTux levels (*.stlv *.stl);;All (*)"));
+    QString path = open_act->property("pendingPath").toString();
+    open_act->setProperty("pendingPath", QVariant());
+    if (path.isEmpty()) {
+      path = QFileDialog::getOpenFileName(
+        &window, QStringLiteral("Open SuperTux Level"),
+        QString(), QStringLiteral("SuperTux levels (*.stlv *.stl);;All (*)"));
+    }
     if (path.isEmpty()) {
       return;
     }
@@ -664,6 +701,17 @@ int main(int argc, char* argv[])
       }
       *last_level_name = level.name.empty() ? "unnamed" : level.name;
       *last_level_meta = level; // keep author/license/tileset for save
+      {
+        QSettings settings(QStringLiteral("Flexlay"), QStringLiteral("SuperTuxEditor"));
+        QStringList recent = settings.value(QStringLiteral("recentFiles")).toStringList();
+        recent.removeAll(path);
+        recent.prepend(path);
+        while (recent.size() > 10) {
+          recent.removeLast();
+        }
+        settings.setValue(QStringLiteral("recentFiles"), recent);
+        rebuild_recent();
+      }
       auto new_map = flexlay::supertux::editor_map_from_level(level, ts, *supertux_datadir);
       workspace->set_map(new_map);
       // Prefer solid tilemap for paint (matches Python get_some_solid_tilemap)

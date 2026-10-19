@@ -55,6 +55,8 @@ if(FLEXLAY_BUILD_SIMPLEED)
     include/flexlay/gui/properties_widget.hpp
     src/gui/object_selector_widget.cpp
     include/flexlay/gui/object_selector_widget.hpp
+    src/gui/minimap_widget.cpp
+    include/flexlay/gui/minimap_widget.hpp
   )
   set_target_properties(flexlay PROPERTIES
     AUTOMOC ON

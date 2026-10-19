@@ -100,6 +100,20 @@ inline std::vector<ObjectPrototype> default_object_prototypes()
       [](PropertyBag& d) { d.set("time", 300); });
   add("mr_tree", "Mr. Tree", Sizef(64, 64), Color(100, 160, 80, 180), "",
       [](PropertyBag&) {});
+  add("coin", "Coin", Sizef(32, 32), Color(255, 220, 50, 200), "",
+      [](PropertyBag&) {});
+  add("heavycoin", "Heavy coin", Sizef(32, 32), Color(255, 200, 40, 200), "",
+      [](PropertyBag&) {});
+  add("rock", "Rock", Sizef(32, 32), Color(140, 120, 100, 200), "",
+      [](PropertyBag&) {});
+  add("jumpy", "Jumpy", Sizef(32, 32), Color(200, 100, 200, 200), "",
+      [](PropertyBag& d) { d.set("direction", std::string("left")); });
+  add("trampoline", "Trampoline", Sizef(32, 32), Color(80, 200, 120, 200), "",
+      [](PropertyBag&) {});
+  add("invisible_wall", "Invisible wall", Sizef(32, 32), Color(255, 0, 0, 80), "",
+      [](PropertyBag&) {});
+  add("infoblock", "Info block", Sizef(32, 32), Color(100, 180, 255, 200), "",
+      [](PropertyBag& d) { d.set("message", std::string("")); });
 
   return out;
 }

@@ -21,6 +21,7 @@ public:
   explicit ObjectSelectorWidget(QWidget* parent = nullptr);
 
   void set_prototypes(std::vector<ObjectPrototype> prototypes);
+  void set_datadir(std::string datadir);
   const std::vector<ObjectPrototype>& prototypes() const { return m_prototypes; }
 
   /** Currently selected prototype, or nullptr. */
@@ -31,6 +32,7 @@ signals:
 
 private:
   std::vector<ObjectPrototype> m_prototypes;
+  std::string m_datadir;
 };
 
 } // namespace flexlay
