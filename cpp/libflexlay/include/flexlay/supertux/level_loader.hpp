@@ -69,7 +69,8 @@ LoadedLevel load_level_file(const std::string& path);
  * Objects become ObjMapRectObject entries on an "objects" ObjectLayer.
  */
 std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
-                                                 std::shared_ptr<Tileset> tileset);
+                                                 std::shared_ptr<Tileset> tileset,
+                                                 const std::string& datadir = {});
 
 } // namespace supertux
 } // namespace flexlay

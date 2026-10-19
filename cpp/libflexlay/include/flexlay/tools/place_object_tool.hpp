@@ -26,6 +26,7 @@ public:
   void set_prototype(ObjectPrototype proto) { m_proto = std::move(proto); }
   const std::optional<ObjectPrototype>& prototype() const { return m_proto; }
   void clear_prototype() { m_proto.reset(); }
+  void set_datadir(std::string datadir) { m_datadir = std::move(datadir); }
 
   /** Called after a successful place (with the new object). */
   std::function<void(std::shared_ptr<ObjMapObject>)> on_placed;
@@ -40,6 +41,7 @@ public:
 private:
   std::shared_ptr<ObjectLayer> m_layer;
   std::optional<ObjectPrototype> m_proto;
+  std::string m_datadir;
   Pointf m_cursor;
   bool m_have_cursor = false;
 };

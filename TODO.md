@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-29.1-level-metadata-5ef0589.bundle`
+**Current tip bundle:** `flexlay-30.1-object-sprites-5ef0589.bundle`
 
 ---
 
@@ -449,12 +449,22 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - `level_from_editor_map(..., meta)` merges metadata for save
 - simpleed keeps `last_level_meta` across Open → Save
 
+### 2026-10-19 — Object sprites + CommandGroup
+
+- **object_sprites**: type → editor image path + default size (spawn, bonusblock,
+  snowball, candle, mr_tree, …)
+- **make_editor_object**: loads PNG from `$datadir/images/…` → ObjMapSpriteObject,
+  else colored rect
+- Level load and place tool use datadir when `SUPERTUX_DATADIR` is set
+- **CommandGroup** composite undo (execute forward / undo reverse)
+
 ### Concrete next steps
 
-1. ~~Level metadata (author, license, tileset path, …)~~  
-2. Object sprites / accurate default sizes from SuperTux assets  
-3. Undo grouping for multi-step place+property  
+1. ~~Object sprites / default sizes from SuperTux assets~~  
+2. ~~CommandGroup for composite undo~~  
+3. Wire property edits through undo commands  
 4. Sector gravity / ambient-light metadata (optional)  
+5. Load `.sprite` definition files (not only PNG frames)  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

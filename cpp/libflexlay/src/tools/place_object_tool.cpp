@@ -24,7 +24,7 @@ void PlaceObjectTool::on_mouse_down(Workspace& workspace, const Pointf& world_po
     return;
   }
 
-  auto obj = m_proto->instantiate(world_pos);
+  auto obj = m_proto->instantiate(world_pos, m_datadir);
   m_layer->clear_selection();
   auto cmd = std::make_shared<ObjectAddCommand>(m_layer);
   cmd->add_object(obj);

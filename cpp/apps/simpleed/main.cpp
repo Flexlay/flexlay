@@ -141,6 +141,7 @@ int main(int argc, char* argv[])
 
   auto place_tool = std::make_shared<flexlay::PlaceObjectTool>();
   place_tool->set_object_layer(object_layer);
+  // datadir set after env is read (see below)
 
   auto workspace = std::make_shared<flexlay::Workspace>();
   workspace->set_map(editor_map);
@@ -419,6 +420,7 @@ int main(int argc, char* argv[])
   // Expected layout: $datadir/images/tiles.stts and $datadir/images/...
   const char* datadir_env = std::getenv("SUPERTUX_DATADIR");
   const std::string supertux_datadir = datadir_env ? datadir_env : std::string{};
+  place_tool->set_datadir(supertux_datadir);
   auto last_level_name = std::make_shared<std::string>("unnamed");
   auto last_level_meta = std::make_shared<flexlay::supertux::LoadedLevel>();
 
@@ -471,7 +473,7 @@ int main(int argc, char* argv[])
       }
       *last_level_name = level.name.empty() ? "unnamed" : level.name;
       *last_level_meta = level; // keep author/license/tileset for save
-      auto new_map = flexlay::supertux::editor_map_from_level(level, ts);
+      auto new_map = flexlay::supertux::editor_map_from_level(level, ts, supertux_datadir);
       workspace->set_map(new_map);
       for (const auto& layer : new_map->layers()) {
         auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer);

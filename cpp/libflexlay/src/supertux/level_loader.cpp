@@ -7,6 +7,7 @@
 #include "flexlay/color.hpp"
 #include "flexlay/object_layer.hpp"
 #include "flexlay/objmap_rect_object.hpp"
+#include "flexlay/supertux/object_sprites.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/util/sexpr.hpp"
 
@@ -213,18 +214,6 @@ void collect_objects(const SExpr& objects_node, std::vector<LoadedTilemap>& tile
   }
 }
 
-Color color_for_type(const std::string& type)
-{
-  // stable-ish color from type string
-  unsigned h = 2166136261u;
-  for (char c : type) {
-    h ^= static_cast<unsigned char>(c);
-    h *= 16777619u;
-  }
-  return Color(static_cast<int>(40 + (h % 180)),
-               static_cast<int>(40 + ((h >> 8) % 180)),
-               static_cast<int>(40 + ((h >> 16) % 180)), 180);
-}
 
 } // namespace
 
@@ -281,7 +270,8 @@ LoadedLevel load_level_file(const std::string& path)
 }
 
 std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
-                                                 std::shared_ptr<Tileset> tileset)
+                                                 std::shared_ptr<Tileset> tileset,
+                                                 const std::string& datadir)
 {
   auto map = std::make_shared<EditorMap>();
   const int ts = tileset ? tileset->get_tile_size() : 32;
@@ -317,14 +307,9 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
   auto object_layer = std::make_shared<ObjectLayer>();
   object_layer->set_name("objects");
   for (const auto& lo : level.objects) {
-    const float w = lo.width > 0 ? lo.width : 32.0f;
-    const float h = lo.height > 0 ? lo.height : 32.0f;
-    auto rect = std::make_shared<ObjMapRectObject>(
-      Pointf(lo.x, lo.y), Sizef(w, h), color_for_type(lo.type));
-    rect->set_name(lo.type);
-    rect->properties() = lo.props;
-    rect->properties().set("type", lo.type);
-    object_layer->add_object(rect);
+    auto obj = make_editor_object(lo.type, Pointf(lo.x, lo.y), lo.width, lo.height,
+                                  lo.props, datadir);
+    object_layer->add_object(obj);
   }
   map->add_layer(object_layer);
 
