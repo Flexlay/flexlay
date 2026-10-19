@@ -21,6 +21,11 @@ int main()
     (supertux-level
       (version 4)
       (name "Roundtrip")
+      (author "Test Author")
+      (license "CC-BY-SA 4.0")
+      (contact "test@example.com")
+      (tileset "images/tiles.stts")
+      (target-time 120)
       (sectors
         (sector
           (name "main")
@@ -56,6 +61,11 @@ int main()
   const std::string text = supertux::save_level_text(level);
   auto again = supertux::load_level_text(text);
   CHECK(again.name == "Roundtrip");
+  CHECK(again.author == "Test Author");
+  CHECK(again.license == "CC-BY-SA 4.0");
+  CHECK(again.contact == "test@example.com");
+  CHECK(again.tileset_path == "images/tiles.stts");
+  CHECK(again.target_time == 120);
   CHECK(again.tilemaps.size() == 1);
   CHECK(again.tilemaps[0].width == 2);
   CHECK(again.tilemaps[0].solid == true);
@@ -71,7 +81,9 @@ int main()
   auto tileset = std::make_shared<Tileset>(32);
   tileset->add_tile(1, Tile(Color(255, 0, 0)));
   auto map = supertux::editor_map_from_level(level, tileset);
-  auto from_map = supertux::level_from_editor_map(*map, "FromMap");
+  auto from_map = supertux::level_from_editor_map(*map, "FromMap", "main", 4, &level);
+  CHECK(from_map.author == "Test Author");
+  CHECK(from_map.tileset_path == "images/tiles.stts");
   CHECK(from_map.tilemaps.size() == 1);
   CHECK(from_map.objects.size() == 2);
   const std::string text2 = supertux::save_level_text(from_map);

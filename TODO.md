@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-28.1-level-save-5ef0589.bundle`
+**Current tip bundle:** `flexlay-29.1-level-metadata-5ef0589.bundle`
 
 ---
 
@@ -442,13 +442,19 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - simpleed **File → Save Level As…** writes `.stlv`
 - Place tool switches to **select** after placing so properties can be edited
 
+### 2026-10-19 — Level metadata load/save
+
+- **LoadedLevel**: author, license, contact, tileset_path, target_time
+- Loader reads them; saver writes when non-empty
+- `level_from_editor_map(..., meta)` merges metadata for save
+- simpleed keeps `last_level_meta` across Open → Save
+
 ### Concrete next steps
 
-1. ~~Save level (tilemaps + objects) to `.stlv`~~  
-2. ~~Select after place for property edit~~  
-3. Preserve more level metadata on load/save (author, license, tileset path)  
-4. Object sprites / accurate default sizes from SuperTux assets  
-5. Undo grouping for multi-step place+property  
+1. ~~Level metadata (author, license, tileset path, …)~~  
+2. Object sprites / accurate default sizes from SuperTux assets  
+3. Undo grouping for multi-step place+property  
+4. Sector gravity / ambient-light metadata (optional)  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

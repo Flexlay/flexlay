@@ -7,7 +7,8 @@
 
 /**
  * Write SuperTux-Origins-style level sexpr (.stlv).
- * Round-trips what the minimal loader understands (tilemaps + generic objects).
+ * Round-trips what the minimal loader understands (tilemaps + generic objects)
+ * plus level metadata (author, license, tileset path, …).
  */
 
 #include "flexlay/editor_map.hpp"
@@ -25,13 +26,15 @@ std::string save_level_text(const LoadedLevel& level);
 void save_level_file(const LoadedLevel& level, const std::string& path);
 
 /**
- * Rebuild a LoadedLevel from an EditorMap produced by editor_map_from_level
- * (or simpleed-compatible structure: TilemapLayers + ObjectLayer of rects).
+ * Rebuild a LoadedLevel from an EditorMap.
+ * If meta is non-null, author/license/contact/tileset_path/target_time/version
+ * are copied from it (map geometry always comes from EditorMap).
  */
 LoadedLevel level_from_editor_map(const EditorMap& map,
                                   const std::string& name = "unnamed",
                                   const std::string& sector_name = "main",
-                                  int version = 4);
+                                  int version = 4,
+                                  const LoadedLevel* meta = nullptr);
 
 } // namespace supertux
 } // namespace flexlay

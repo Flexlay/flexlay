@@ -11,6 +11,7 @@
  * - Tilesets: (supertux-tileset ...) in .stts
  *
  * Loads first sector tilemaps + a subset of game objects into EditorMap.
+ * Level metadata (author, license, tileset path, …) is preserved for save.
  */
 
 #include "flexlay/editor_map.hpp"
@@ -49,6 +50,11 @@ struct LoadedLevel
 {
   std::string name;
   int version = 0;
+  std::string author;
+  std::string license;
+  std::string contact;
+  std::string tileset_path; // e.g. "images/tiles.stts"
+  int target_time = 0;      // 0 = unset
   std::string sector_name;
   std::vector<LoadedTilemap> tilemaps;
   std::vector<LoadedObject> objects;

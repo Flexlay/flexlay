@@ -238,6 +238,11 @@ LoadedLevel load_level_text(const std::string& text)
   LoadedLevel level;
   level.version = child_int(root, "version");
   level.name = child_atom(root, "name");
+  level.author = child_atom(root, "author");
+  level.license = child_atom(root, "license");
+  level.contact = child_atom(root, "contact");
+  level.tileset_path = child_atom(root, "tileset");
+  level.target_time = child_int(root, "target-time", 0);
 
   const SExpr* sectors = find_child(root, "sectors");
   if (!sectors) {

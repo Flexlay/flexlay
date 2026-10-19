@@ -76,6 +76,26 @@ std::string save_level_text(const LoadedLevel& level)
   out << "(version " << (level.version > 0 ? level.version : 4) << ")\n";
   write_indent(out, 1);
   out << "(name \"" << escape_string(level.name.empty() ? "unnamed" : level.name) << "\")\n";
+  if (!level.author.empty()) {
+    write_indent(out, 1);
+    out << "(author \"" << escape_string(level.author) << "\")\n";
+  }
+  if (!level.license.empty()) {
+    write_indent(out, 1);
+    out << "(license \"" << escape_string(level.license) << "\")\n";
+  }
+  if (!level.contact.empty()) {
+    write_indent(out, 1);
+    out << "(contact \"" << escape_string(level.contact) << "\")\n";
+  }
+  if (!level.tileset_path.empty()) {
+    write_indent(out, 1);
+    out << "(tileset \"" << escape_string(level.tileset_path) << "\")\n";
+  }
+  if (level.target_time > 0) {
+    write_indent(out, 1);
+    out << "(target-time " << level.target_time << ")\n";
+  }
   write_indent(out, 1);
   out << "(sectors\n";
   write_indent(out, 2);
@@ -168,12 +188,29 @@ void save_level_file(const LoadedLevel& level, const std::string& path)
 }
 
 LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
-                                  const std::string& sector_name, int version)
+                                  const std::string& sector_name, int version,
+                                  const LoadedLevel* meta)
 {
   LoadedLevel level;
   level.name = name;
   level.sector_name = sector_name;
   level.version = version;
+  if (meta) {
+    if (level.name == "unnamed" && !meta->name.empty()) {
+      level.name = meta->name;
+    }
+    if (level.version <= 0 && meta->version > 0) {
+      level.version = meta->version;
+    }
+    level.author = meta->author;
+    level.license = meta->license;
+    level.contact = meta->contact;
+    level.tileset_path = meta->tileset_path;
+    level.target_time = meta->target_time;
+    if (level.sector_name == "main" && !meta->sector_name.empty()) {
+      level.sector_name = meta->sector_name;
+    }
+  }
 
   int z = 0;
   for (const auto& layer : map.layers()) {

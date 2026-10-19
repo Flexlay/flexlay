@@ -420,6 +420,7 @@ int main(int argc, char* argv[])
   const char* datadir_env = std::getenv("SUPERTUX_DATADIR");
   const std::string supertux_datadir = datadir_env ? datadir_env : std::string{};
   auto last_level_name = std::make_shared<std::string>("unnamed");
+  auto last_level_meta = std::make_shared<flexlay::supertux::LoadedLevel>();
 
   QObject::connect(open_act, &QAction::triggered, [&]() {
     const QString path = QFileDialog::getOpenFileName(
@@ -469,6 +470,7 @@ int main(int argc, char* argv[])
         }
       }
       *last_level_name = level.name.empty() ? "unnamed" : level.name;
+      *last_level_meta = level; // keep author/license/tileset for save
       auto new_map = flexlay::supertux::editor_map_from_level(level, ts);
       workspace->set_map(new_map);
       for (const auto& layer : new_map->layers()) {
@@ -536,7 +538,9 @@ int main(int argc, char* argv[])
     }
     try {
       auto level = flexlay::supertux::level_from_editor_map(
-        *map, *last_level_name, "main", 4);
+        *map, *last_level_name, "main",
+        last_level_meta->version > 0 ? last_level_meta->version : 4,
+        last_level_meta.get());
       flexlay::supertux::save_level_file(level, path.toStdString());
       map->set_modified(false);
       window.statusBar()->showMessage(
