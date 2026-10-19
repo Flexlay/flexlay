@@ -56,3 +56,11 @@ For the C++ port planning/implementation sequence, the base commit is
 the tip of `master` at the start of that work:
 
 - Base: `5ef0589431456887a372c8e27df9d5d5af68c52f` (`5ef0589`)
+
+## Locked port decisions (see TODO.md)
+
+- **Qt6** for the C++ editor.
+- **C++ simpleed first** (framework demo); SuperTux after that.
+- SuperTux short-term: **embedded CPython** for load/save only.
+- Objects: **ECS-like, data-driven** properties/components with
+  **constraint hooks** for game rules that change often.
