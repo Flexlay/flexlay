@@ -17,3 +17,7 @@ add_test(NAME test_tilemap COMMAND test_tilemap)
 add_executable(test_paint test_paint.cpp)
 target_link_libraries(test_paint PRIVATE flexlay::flexlay)
 add_test(NAME test_paint COMMAND test_paint)
+
+add_executable(test_objects test_objects.cpp)
+target_link_libraries(test_objects PRIVATE flexlay::flexlay)
+add_test(NAME test_objects COMMAND test_objects)

@@ -4,9 +4,12 @@
 
 #include "flexlay/editor_map.hpp"
 #include "flexlay/editor_map_widget.hpp"
+#include "flexlay/object_layer.hpp"
+#include "flexlay/objmap_rect_object.hpp"
 #include "flexlay/tile.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/tileset.hpp"
+#include "flexlay/tools/objmap_select_tool.hpp"
 #include "flexlay/tools/tile_paint_tool.hpp"
 #include "flexlay/workspace.hpp"
 
@@ -52,15 +55,27 @@ int main(int argc, char* argv[])
     }
   }
 
+  auto object_layer = std::make_shared<flexlay::ObjectLayer>();
+  object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
+    flexlay::Pointf(64, 64), flexlay::Sizef(64, 48), flexlay::Color(255, 200, 50, 160)));
+  object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
+    flexlay::Pointf(200, 120), flexlay::Sizef(80, 80), flexlay::Color(50, 200, 255, 160)));
+  object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
+    flexlay::Pointf(400, 200), flexlay::Sizef(96, 40), flexlay::Color(255, 80, 120, 160)));
+
   auto editor_map = std::make_shared<flexlay::EditorMap>();
   editor_map->set_background_color(flexlay::Color(45, 45, 55));
   editor_map->set_bounding_rect(flexlay::Rectf(
     0, 0, static_cast<float>(map_w * tile_size), static_cast<float>(map_h * tile_size)));
   editor_map->add_layer(tilemap);
+  editor_map->add_layer(object_layer);
 
   auto paint_tool = std::make_shared<flexlay::TilePaintTool>();
   paint_tool->set_tilemap(tilemap);
   paint_tool->set_tile_id(1);
+
+  auto select_tool = std::make_shared<flexlay::ObjMapSelectTool>();
+  select_tool->set_object_layer(object_layer);
 
   auto workspace = std::make_shared<flexlay::Workspace>();
   workspace->set_map(editor_map);
@@ -76,12 +91,21 @@ int main(int argc, char* argv[])
   auto* layout = new QHBoxLayout(central);
   auto* sidebar = new QWidget(central);
   auto* side_layout = new QVBoxLayout(sidebar);
-  side_layout->addWidget(new QLabel(QStringLiteral("Tile:"), sidebar));
 
+  side_layout->addWidget(new QLabel(QStringLiteral("Tool:"), sidebar));
+  auto* paint_btn = new QPushButton(QStringLiteral("Paint tiles"), sidebar);
+  auto* select_btn = new QPushButton(QStringLiteral("Select objects"), sidebar);
+  side_layout->addWidget(paint_btn);
+  side_layout->addWidget(select_btn);
+
+  side_layout->addWidget(new QLabel(QStringLiteral("Tile:"), sidebar));
   auto make_tile_btn = [&](uint32_t id, const QString& label, const QColor& color) {
     auto* btn = new QPushButton(label, sidebar);
     btn->setStyleSheet(QStringLiteral("background-color: %1; min-height: 28px;").arg(color.name()));
-    QObject::connect(btn, &QPushButton::clicked, [paint_tool, id]() { paint_tool->set_tile_id(id); });
+    QObject::connect(btn, &QPushButton::clicked, [paint_tool, workspace, id]() {
+      paint_tool->set_tile_id(id);
+      workspace->set_tool(paint_tool);
+    });
     side_layout->addWidget(btn);
   };
   make_tile_btn(0, QStringLiteral("0 Erase"), QColor(40, 40, 40));
@@ -98,10 +122,18 @@ int main(int argc, char* argv[])
   layout->addWidget(map_widget, 1);
   window.setCentralWidget(central);
 
+  QObject::connect(paint_btn, &QPushButton::clicked, [workspace, paint_tool, map_widget]() {
+    workspace->set_tool(paint_tool);
+    map_widget->setFocus();
+  });
+  QObject::connect(select_btn, &QPushButton::clicked, [workspace, select_tool, map_widget]() {
+    workspace->set_tool(select_tool);
+    map_widget->setFocus();
+  });
+
   auto update_status = [&]() {
     window.statusBar()->showMessage(
-      QStringLiteral("LMB paint | MMB pan | Wheel zoom | Ctrl+Z/Y undo/redo | tile=%1 | undo=%2 redo=%3")
-        .arg(paint_tool->tile_id())
+      QStringLiteral("Paint/Select | LMB edit | MMB pan | Wheel zoom | Ctrl+Z/Y | undo=%1 redo=%2")
         .arg(editor_map->undo_stack_size())
         .arg(editor_map->redo_stack_size()));
   };

@@ -298,12 +298,20 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **simpleed** tile palette sidebar
 - **test_paint** green
 
+### 2026-10-19 — Object layer
+
+- **ObjMapObject** / **ObjMapRectObject**
+- **ObjectLayer** (hit-test, selection)
+- **ObjectMoveCommand** + **ObjMapSelectTool**
+- **simpleed**: Paint vs Select tools; demo rect objects
+- **test_objects** green
+
 ### Concrete next steps
 
-1. ~~Scaffold through tilemap view~~  
-2. ~~Paint + undo/redo~~  
-3. Object layer (rects) + select/move  
-4. Tile brushes (multi-tile)  
+1. ~~Scaffold through paint/undo~~  
+2. ~~Object layer select/move~~  
+3. Object add/delete commands; resize handles  
+4. Multi-tile brushes  
 5. SuperTux + Python embed after simpleed is useful
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
