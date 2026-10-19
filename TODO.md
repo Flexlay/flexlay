@@ -1,9 +1,9 @@
 # TODO.md — Flexlay C++/Qt port
 
-**Status:** decisions locked; next work is Phase 0 scaffolding + C++ simpleed.  
+**Status:** Phase 0 scaffold + math/Color/Field done; simpleed is a Qt shell only.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
-**Branch tip:** see `git log -1` (planning commits only so far).  
-**Next bundle number:** `flexlay-002.1-…-5ef0589.bundle` (after next tip; 001.1 already delivered).
+**Branch tip:** see `git log -1`.  
+**Current tip bundle:** `flexlay-003.1-cpp-scaffold-math-field-5ef0589.bundle`
 
 ---
 
