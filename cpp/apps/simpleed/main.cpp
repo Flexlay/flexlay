@@ -19,6 +19,8 @@
 #include "flexlay/supertux/level_loader.hpp"
 #include "flexlay/supertux/tileset_loader.hpp"
 #include "flexlay/workspace.hpp"
+#include "flexlay/gui/tile_selector_widget.hpp"
+#include "flexlay/tile_brush.hpp"
 
 
 #include <QApplication>
@@ -33,11 +35,16 @@
 #include <QStatusBar>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QComboBox>
+#include <QDockWidget>
+#include <QScrollArea>
+#include <QVariant>
 
 #include <memory>
 #include <cstdlib>
 #include <filesystem>
 #include <random>
+#include <vector>
 
 int main(int argc, char* argv[])
 {
@@ -178,6 +185,76 @@ int main(int argc, char* argv[])
   map_widget->set_workspace(workspace);
   layout->addWidget(sidebar, 0);
   layout->addWidget(map_widget, 1);
+
+  // Tile selector dock (groups + grid)
+  auto* tile_dock = new QDockWidget(QStringLiteral("Tiles"), &window);
+  tile_dock->setObjectName(QStringLiteral("tile_selector_dock"));
+  auto* tile_dock_inner = new QWidget(tile_dock);
+  auto* tile_dock_layout = new QVBoxLayout(tile_dock_inner);
+  tile_dock_layout->setContentsMargins(4, 4, 4, 4);
+  auto* group_combo = new QComboBox(tile_dock_inner);
+  tile_dock_layout->addWidget(group_combo);
+  auto* tile_scroll = new QScrollArea(tile_dock_inner);
+  tile_scroll->setWidgetResizable(true);
+  tile_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  auto* tile_selector = new flexlay::TileSelectorWidget(tile_scroll);
+  tile_selector->set_tileset(tileset);
+  {
+    std::vector<int> demo_ids = {1, 2, 3, 4, 5};
+    tile_selector->set_tiles(demo_ids);
+    group_combo->addItem(QStringLiteral("Demo"), QVariant::fromValue(0));
+  }
+  tile_scroll->setWidget(tile_selector);
+  tile_dock_layout->addWidget(tile_scroll, 1);
+  tile_dock->setWidget(tile_dock_inner);
+  window.addDockWidget(Qt::RightDockWidgetArea, tile_dock);
+
+  // Keep last loaded tilegroups for combo switching
+  auto tilegroups = std::make_shared<std::vector<flexlay::supertux::TileGroupInfo>>();
+  auto current_tileset = std::make_shared<std::shared_ptr<flexlay::Tileset>>(tileset);
+
+  auto apply_tilegroup = [tile_selector, group_combo, tilegroups, current_tileset](int idx) {
+    if (!*current_tileset) {
+      return;
+    }
+    tile_selector->set_tileset(*current_tileset);
+    if (idx < 0 || tilegroups->empty()) {
+      // all tiles from tileset
+      tile_selector->set_tiles((*current_tileset)->get_tiles());
+      return;
+    }
+    if (idx >= static_cast<int>(tilegroups->size())) {
+      tile_selector->set_tiles((*current_tileset)->get_tiles());
+      return;
+    }
+    tile_selector->set_tiles((*tilegroups)[static_cast<size_t>(idx)].tiles);
+  };
+
+  QObject::connect(group_combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                   apply_tilegroup);
+
+  QObject::connect(tile_selector, &flexlay::TileSelectorWidget::tile_selected,
+                   [paint_tool, fill_tool, workspace](int id) {
+                     if (id <= 0) {
+                       return;
+                     }
+                     paint_tool->set_tile_id(static_cast<uint32_t>(id));
+                     fill_tool->set_tile_id(static_cast<uint32_t>(id));
+                     workspace->set_tool(paint_tool);
+                   });
+
+  QObject::connect(tile_selector, &flexlay::TileSelectorWidget::brush_selected,
+                   [paint_tool, workspace](int w, int h, const std::vector<uint32_t>& ids) {
+                     flexlay::TileBrush brush(w, h);
+                     for (int y = 0; y < h; ++y) {
+                       for (int x = 0; x < w; ++x) {
+                         brush.put(x, y, ids[static_cast<size_t>(y * w + x)]);
+                       }
+                     }
+                     brush.set_opaque(false);
+                     paint_tool->set_brush(brush);
+                     workspace->set_tool(paint_tool);
+                   });
   window.setCentralWidget(central);
 
   QObject::connect(paint_btn, &QPushButton::clicked, [workspace, paint_tool, map_widget]() {
@@ -237,6 +314,7 @@ int main(int argc, char* argv[])
     try {
       auto level = flexlay::supertux::load_level_file(path.toStdString());
       std::shared_ptr<flexlay::Tileset> ts;
+      flexlay::supertux::LoadedTilesetMeta meta;
       int image_tiles = 0;
       if (!supertux_datadir.empty()) {
         const std::string stts = supertux_datadir + "/images/tiles.stts";
@@ -247,6 +325,7 @@ int main(int argc, char* argv[])
         try {
           auto loaded = flexlay::supertux::load_tileset_file(stts, opts);
           ts = loaded.first;
+          meta = loaded.second;
           for (int id : ts->get_tiles()) {
             if (ts->create(id).has_image()) {
               ++image_tiles;
@@ -262,7 +341,6 @@ int main(int argc, char* argv[])
       if (!ts) {
         ts = std::make_shared<flexlay::Tileset>(tile_size);
       }
-      // Ensure every id used in the level exists (placeholder if missing).
       for (const auto& tm : level.tilemaps) {
         for (uint32_t id : tm.tiles) {
           if (id != 0 && !ts->has_tile(static_cast<int>(id))) {
@@ -283,12 +361,30 @@ int main(int argc, char* argv[])
           break;
         }
       }
+      *current_tileset = ts;
+      tile_selector->set_tileset(ts);
+      *tilegroups = meta.tilegroups;
+      group_combo->blockSignals(true);
+      group_combo->clear();
+      if (tilegroups->empty()) {
+        group_combo->addItem(QStringLiteral("All tiles"));
+        tile_selector->set_tiles(ts->get_tiles());
+      } else {
+        for (const auto& g : *tilegroups) {
+          group_combo->addItem(QString::fromStdString(g.name));
+        }
+        group_combo->addItem(QStringLiteral("All tiles"));
+        group_combo->setCurrentIndex(0);
+        tile_selector->set_tiles((*tilegroups)[0].tiles);
+      }
+      group_combo->blockSignals(false);
       map_widget->update();
       window.statusBar()->showMessage(
-        QStringLiteral("Loaded %1 (%2 tilemaps, %3 tiles with images)")
+        QStringLiteral("Loaded %1 (%2 tilemaps, %3 tiles with images, %4 groups)")
           .arg(QString::fromStdString(level.name))
           .arg(level.tilemaps.size())
-          .arg(image_tiles));
+          .arg(image_tiles)
+          .arg(tilegroups->size()));
     } catch (const std::exception& ex) {
       QMessageBox::warning(&window, QStringLiteral("Open Level"),
                            QString::fromUtf8(ex.what()));

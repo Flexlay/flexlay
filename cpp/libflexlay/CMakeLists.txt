@@ -42,6 +42,8 @@ if(FLEXLAY_BUILD_SIMPLEED)
   target_sources(flexlay PRIVATE
     src/editor_map_widget.cpp
     include/flexlay/editor_map_widget.hpp
+    src/gui/tile_selector_widget.cpp
+    include/flexlay/gui/tile_selector_widget.hpp
   )
   set_target_properties(flexlay PROPERTIES
     AUTOMOC ON
