@@ -1,9 +1,9 @@
 # TODO.md — Flexlay C++/Qt port
 
-**Status:** planning complete; no C++ code yet.  
+**Status:** decisions locked; next work is Phase 0 scaffolding + C++ simpleed.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
-**Branch tip:** same as base until first implementation commits land.  
-**Next bundle number:** `flexlay-001.1-…-5ef0589.bundle` (when implementation starts).
+**Branch tip:** see `git log -1` (planning commits only so far).  
+**Next bundle number:** `flexlay-002.1-…-5ef0589.bundle` (after next tip; 001.1 already delivered).
 
 ---
 
@@ -71,8 +71,8 @@ today: PyQt5, numpy (only `Field`), pyxdg (config paths).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  flexlay-app (C++ executable)                               │
-│  - Qt6 (preferred) or Qt5 main window, docks, tools         │
+│  flexlay-simpleed / flexlay-supertux (C++ executables)      │
+│  - Qt6 main window, docks, tools                            │
 │  - links libflexlay                                         │
 └───────────────────────────┬─────────────────────────────────┘
                             │
@@ -81,31 +81,25 @@ today: PyQt5, numpy (only `Field`), pyxdg (config paths).
 │  - math, Field, TilemapLayer, ObjectLayer, EditorMap        │
 │  - Workspace, Tools, Command stack                          │
 │  - GraphicContext (QPainter), GUI widgets as QWidget        │
-│  - Property system (C++ types + UI binding)                 │
+│  - Property / component system (ECS-like, data-driven)      │
+│  - Constraint hooks on components (C++ or script callbacks) │
 │  - Plugin API: GameBackend / LevelIO / ObjectTypeRegistry   │
 └───────┬─────────────────────────────┬───────────────────────┘
         │                             │
         ▼                             ▼
 ┌───────────────────┐       ┌───────────────────────────────┐
-│  supertux plugin  │  or   │  Embedded Python (optional)   │
+│  supertux plugin  │  or   │  Embedded Python (short-term) │
 │  (C++ .so)        │       │  - load/save .stl via existing│
 │  - sexpr I/O      │       │    Python modules             │
-│  - object types   │       │  - object defs from Python    │
+│  - type registry  │       │  - object defs until data port│
 └───────────────────┘       └───────────────────────────────┘
 ```
 
-**Recommendation:** implement the core as C++ first with a **narrow
-plugin interface**. For SuperTux specifically, **phase 1** can embed
-CPython only for load/save + object registration (reuse `supertux/`
-almost as-is). **Phase 2** either:
-
-- rewrite SuperTux I/O and object tables in C++, or
-- keep a thin Python plugin, or
-- move object definitions to data files (JSON/SExpr schema) so neither
-  Python nor large C++ tables are required for “new object types”.
-
-Other scripting languages (Lua, Wren, etc.) are possible later via the
-same plugin API; do **not** design the core around a specific VM.
+**Locked approach:** C++ core first; **C++ `simpleed` is the first
+milestone**. SuperTux uses **embedded CPython only for load/save + type
+registration** until those move to C++ or data. Object model stays
+**ECS-like and data-driven** (see below). Do **not** design libflexlay
+around a specific scripting VM; plugins may embed Python or not.
 
 ### Plugin / GameBackend sketch (C++)
 
@@ -121,20 +115,48 @@ public:
 };
 ```
 
-Python backend would implement this via a small C++ shim that calls into
-Python (or via pybind11 / nanobind). Pure C++ SuperTux backend later
-implements the same interface.
+Python backend: small C++ shim (pybind11 / nanobind or raw C API) calling
+existing `supertux/` modules. Pure C++ SuperTux backend later implements
+the same interface.
+
+### Object / property model (ECS-like, data-driven)
+
+SuperTux objects are already close to a component bag: a type name plus a
+list of typed properties (`gameobjs.py` / `Property` hierarchy). Keep that
+shape in C++:
+
+- **Entity** = editor object on an `ObjectLayer` (position, sprite/rect
+  presentation, selection handles).
+- **Components** = named property bags (or explicit component types:
+  transform, sprite, physics params, path, …) declared in data where
+  possible.
+- **Type registry** = maps type id → default components, icon, factory
+  hints, and optional **constraint hooks**.
+
+**Constraints** change often with the game. Support them without baking
+every rule into the core:
+
+1. **Declarative** constraints in type data where enough (min/max, enum
+   choices, required fields, “hide if other prop is X”).
+2. **Hook callbacks** on the registry / component: validate on edit,
+   clamp, cross-field rules. Hooks may be C++ function pointers from a
+   plugin **or** optional script callables while Python is still embedded.
+3. Core editor only enforces generic rules (types, undo, UI binding);
+   game-specific rules live in the backend/plugin.
+
+Prefer data files (SExpr or JSON schema for type + components) for the
+bulk of definitions so game churn does not require recompiling
+libflexlay. Code hooks remain available for the awkward cases.
 
 ---
 
 ## Port strategy (phased)
 
-### Phase 0 — scaffolding (first commits)
+### Phase 0 — scaffolding (first implementation commits)
 
-1. Add C++ build via CMake (and optionally Nix flake outputs for C++).
-2. Qt6 preferred (Qt5 acceptable if SuperTux packaging constraints
-   demand it). Modules: Core, Gui, Widgets.
-3. Directory layout proposal:
+1. Add C++ build via CMake + optional Nix flake outputs for C++.
+2. **Qt6** (decided). Modules: Core, Gui, Widgets.
+3. Directory layout:
 
    ```
    cpp/
@@ -142,16 +164,16 @@ implements the same interface.
      libflexlay/
        include/flexlay/...
        src/...
-     app/
-       main.cpp          # generic or simpleed equivalent
+     apps/
+       simpleed/main.cpp   # first milestone — C++ simpleed
+       supertux/           # later
      plugins/
-       supertux/         # later
+       supertux/           # later (Python embed then C++)
    ```
 
 4. Keep existing Python tree **intact and runnable** throughout. Do not
-   delete or break `supertux-editor` until a C++ path is feature-parity
-   for day-to-day use.
-5. Add `AGENTS.md` / this `TODO.md` (done in planning commit).
+   delete or break `supertux-editor` until a C++ path is usable.
+5. `AGENTS.md` / this `TODO.md` already added.
 
 ### Phase 1 — pure domain types (no GUI)
 
@@ -182,37 +204,32 @@ Optionally add a thin Python extension module later that wraps the C++
    properties widget, button panel, menubar, statusbar.  
 5. Port `GUIManager` + main window geometry restore (Config).  
 
-Deliverable: **C++ `simpleed`-equivalent** that can paint tilemaps,
-place rect/sprite objects, undo, zoom — no SuperTux.
+**Milestone A (priority):** **C++ `simpleed`** that can paint tilemaps,
+place rect/sprite objects, undo, zoom — no SuperTux. Do this before any
+Python embedding work.
 
-### Phase 3 — SuperTux integration (minimal Python)
+### Phase 3 — SuperTux integration (minimal Python) — after simpleed works
 
-**Preferred first approach — embed Python for game I/O only:**
+**Decided approach — embed CPython for game I/O only (short-term):**
 
 1. C++ app owns window and map editing.  
 2. On File→Open/Save, call into existing `supertux.level` /
-   `supertux.sector` Python code via embedding or a small helper process.  
-3. Object type list and icons: either  
-   - export a registration API from Python at startup, or  
-   - gradually move static object definitions to data.  
-4. Property editing: C++ properties widget; values synced with Python
-   objects **or** with a C++ mirror updated on load/save.
+   `supertux.sector` via embedding.  
+3. Object types/icons: registration API from Python at startup, while
+   migrating definitions toward data + constraint hooks.  
+4. Property editing in C++; values synced with Python objects or a C++
+   mirror updated on load/save.
 
-This keeps SuperTux load/save working without rewriting sexpr and the
-large `gameobjs.py` table on day one.
-
-**Alternative:** subprocess + IPC (JSON level dump). Heavier operationally;
-only if embedding is painful.
+Avoid rewriting sexpr/`gameobjs.py` on day one of SuperTux support.
 
 ### Phase 4 — reduce / eliminate Python
 
-1. Port sexpr reader/writer to C++ (or reuse a minimal Lisp parser).  
+1. Port sexpr reader/writer to C++.  
 2. Port Level/Sector/Tilemap load/save.  
-3. Move object definitions to declarative data (recommended) or C++
-   registration tables.  
+3. Move object definitions to declarative data + constraint hooks
+   (ECS-like components); keep code hooks only where needed.  
 4. Drop Python runtime from the default SuperTux editor build.  
-5. Optionally keep Python as an **optional** plugin for experimental
-   games / user scripts.
+5. Optionally keep Python as an **optional** plugin for experiments.
 
 ### Phase 5 — cleanup
 
@@ -223,46 +240,45 @@ only if embedding is painful.
 
 ---
 
-## Design decisions to resolve early
+## Design decisions (resolved 2026-10-19)
 
-| Topic | Recommendation | Notes |
-|-------|----------------|-------|
-| Qt5 vs Qt6 | **Qt6** unless packagers block it | PyQt side stays on whatever it uses until retired |
-| Build system | **CMake** + Nix flake wrappers | Matches modern SuperTux/C++ practice |
-| Field storage | `std::vector<uint32_t>` | Drop numpy dependency in C++ |
-| Scripting | Plugin API first; **optional** Python embed | Do not hard-require a VM in libflexlay |
-| Object definitions | Long-term: **data-driven** schema | Avoid 800+ LOC of generated C++ classes |
-| Parallel Python | Keep running until C++ simpleed + SuperTux open/save work | No big-bang rewrite |
-| OpenGL | Defer | Current code is QPainter; port that first |
+| Topic | Decision | Notes |
+|-------|----------|-------|
+| Qt version | **Qt6** | Locked |
+| First milestone | **C++ simpleed** | Before SuperTux / Python embed |
+| SuperTux short-term | **Embed CPython** for load/save + type reg | After simpleed works |
+| Object model | **ECS-like, data-driven** + constraint hooks | Properties ≈ components; hooks for game rules that change often |
+| Build system | **CMake** + Nix flake wrappers | |
+| Field storage | `std::vector<uint32_t>` | Drop numpy in C++ |
+| Scripting in core | **No** hard VM dependency | Plugin may embed Python |
+| Parallel Python tree | Keep until C++ path is usable | No big-bang rewrite |
+| OpenGL | Defer | QPainter first |
 
 ---
 
 ## Risk notes
 
-- **Properties + gameobjs**: largest semantic surface. Data-driven
-  definitions reduce port cost and future maintenance.  
-- **Dual stacks**: running Python and C++ editors in one tree is fine for
-  a while; avoid sharing on-disk config keys that diverge in meaning.  
+- **Properties + gameobjs**: largest surface. Data-driven components +
+  explicit constraint hooks avoid a brittle generated class hierarchy
+  while still allowing game-specific rules.  
+- **Dual stacks**: Python and C++ editors in one tree is fine; avoid
+  diverging config key meanings.  
 - **Input/coord systems**: screen↔world and zoom must match existing
   behaviour (tools and minimap are sensitive).  
 - **Drag-and-drop MIME** (`application/x-supertux-badguy`): keep stable
   or provide a compatibility path.  
-- Historical C++ Flexlay sources (if still recoverable from tags /
-  other repos) are useful **reference**, not something to revive
-  wholesale — the Qt GUI and current feature set differ.
+- Historical C++ Flexlay is **reference only**, not a wholesale revive.
 
 ---
 
 ## Concrete next implementation steps
 
-When coding starts (separate session / commits):
-
-1. Scaffold `cpp/` with CMake, Qt6, empty `libflexlay` + `flexlay-simpleed`.  
-2. Port `math` + `Color` + tests.  
-3. Port `Field` and `TilemapLayer` draw path with a stub `GraphicContext`.  
-4. Minimal main window + map widget showing a blank/filled tilemap.  
-5. Iterate tools and undo.  
-6. Only then wire SuperTux Python load/save.
+1. Scaffold `cpp/` with CMake, Qt6, empty `libflexlay` + `apps/simpleed`.  
+2. Port `math` + `Color` + small unit tests.  
+3. Port `Field` and `TilemapLayer` draw path with stub `GraphicContext`.  
+4. Minimal main window + map widget (blank/filled tilemap).  
+5. Tools + undo until C++ simpleed is useful.  
+6. **Only then** SuperTux + Python embed for load/save.
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 
@@ -270,21 +286,19 @@ Do **not** start by embedding Python or rewriting `gameobjs.py`.
 
 ## Continuity
 
-- All plan text lives in this file and `AGENTS.md`.  
-- Implementation commits go on top of base `5ef0589`.  
+- Plan text: this file + `AGENTS.md`.  
+- Implementation commits on top of base `5ef0589`.  
 - Bundles: full range `5ef0589..HEAD`, naming
   `flexlay-NNN.M-slug-5ef0589.bundle`, author Ingo Ruhnke, co-authored Grok.  
-- Python editor must remain buildable via existing flake/`setup.cfg`
-  until explicitly retired in a later phase.
+- Python editor stays buildable via flake/`setup.cfg` until retired.
 
 ---
 
-## Open questions for the maintainer
+## Resolved questions (2026-10-19)
 
-1. Qt6 acceptable as the C++ baseline?  
-2. Is embedding CPython for SuperTux I/O acceptable short-term, or is a
-   pure C++ SuperTux path required from the first usable binary?  
-3. Preference for object types: keep code-defined vs move to data files?  
-4. Should `simpleed` remain a first-class demo target in C++?
-
-Update this section when answers arrive.
+1. **Qt6** — yes.  
+2. **Python embed for SuperTux I/O** — yes, short-term, after simpleed.  
+3. **Object types** — ECS-like / data-driven preferred; keep **hooks** for
+   constraints and rules that change with the game; most of the surface is
+   already a properties/components list.  
+4. **simpleed first** — yes; that is milestone A.
