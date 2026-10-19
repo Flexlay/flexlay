@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-35.1-flake-cpp-default-5ef0589.bundle`
+**Current tip bundle:** `flexlay-36.1-cli-debug-5ef0589.bundle`
 
 ---
 
@@ -502,6 +502,23 @@ nix run                         # C++ SuperTux editor
 nix run .#supertux-editor       # same
 nix run .#supertux-editor-python
 SUPERTUX_DATADIR=/path/to/data nix run
+```
+
+### 2026-10-19 — CLI + startup diagnostics
+
+Why `SUPERTUX_DATADIR` seemed to "do nothing": it only affects **tileset/sprite
+images when a level is opened**. Startup always used a **demo map** unless
+`--level` is passed.
+
+- `--help` / `-v` / `-d DIR` / `-l FILE` / `--no-demo` / bare level path
+- Auto-resolve `…/data` if user passed SuperTux repo root
+- stderr banner: datadir, demo vs level
+- Window title shows **DEMO MAP** or level name
+- Status bar shows datadir state
+
+```bash
+supertux-editor -d /path/to/supertux/data \
+  -l /path/to/supertux/data/levels/world1/….stlv -v
 ```
 
 ### Concrete next steps
