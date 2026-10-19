@@ -11,6 +11,7 @@
  */
 
 #include "flexlay/math/size.hpp"
+#include "flexlay/math/point.hpp"
 #include "flexlay/objmap_object.hpp"
 #include "flexlay/property_bag.hpp"
 #include "flexlay/sprite.hpp"
@@ -46,6 +47,11 @@ std::shared_ptr<ObjMapObject> make_editor_object(const std::string& type,
                                                 float height,
                                                 const PropertyBag& props,
                                                 const std::string& datadir);
+
+/** Clone an editor object (type + props + optional size); offset applied to position. */
+std::shared_ptr<ObjMapObject> clone_editor_object(const ObjMapObject& src,
+                                                 const Pointf& offset,
+                                                 const std::string& datadir = {});
 
 } // namespace supertux
 } // namespace flexlay

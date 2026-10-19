@@ -3,7 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "flexlay/editor_map_widget.hpp"
+
+#include "flexlay/commands/object_add_command.hpp"
+#include "flexlay/commands/object_move_command.hpp"
 #include "flexlay/qt_graphic_context.hpp"
+#include "flexlay/supertux/object_sprites.hpp"
 #include "flexlay/tools/objmap_select_tool.hpp"
 
 #include <algorithm>
@@ -227,6 +231,52 @@ void EditorMapWidget::keyPressEvent(QKeyEvent* event)
           emit map_changed();
           event->accept();
           return;
+        }
+      }
+
+      // Arrow-key nudge (Shift = 32px tile step, else 1px)
+      {
+        float step = (event->modifiers() & Qt::ShiftModifier) ? 32.0f : 1.0f;
+        Pointf delta(0, 0);
+        if (event->key() == Qt::Key_Left) delta.x = -step;
+        else if (event->key() == Qt::Key_Right) delta.x = step;
+        else if (event->key() == Qt::Key_Up) delta.y = -step;
+        else if (event->key() == Qt::Key_Down) delta.y = step;
+        if (delta.x != 0 || delta.y != 0) {
+          if (auto* map = m_workspace->map()) {
+            auto cmd = std::make_shared<ObjectMoveCommand>();
+            for (const auto& obj : sel) {
+              cmd->add_obj(obj);
+            }
+            cmd->move_by(delta);
+            if (!cmd->empty()) {
+              map->execute(cmd);
+              update();
+              emit map_changed();
+              event->accept();
+              return;
+            }
+          }
+        }
+      }
+
+      // Ctrl+D duplicate selection (offset +32,+32)
+      if ((event->modifiers() & Qt::ControlModifier) && event->key() == Qt::Key_D) {
+        if (auto* map = m_workspace->map()) {
+          auto cmd = std::make_shared<ObjectAddCommand>(layer);
+          layer->clear_selection();
+          for (const auto& obj : sel) {
+            auto clone = supertux::clone_editor_object(*obj, Pointf(32, 32), {});
+            clone->set_selected(true);
+            cmd->add_object(clone);
+          }
+          if (!cmd->empty()) {
+            map->execute(cmd);
+            update();
+            emit map_changed();
+            event->accept();
+            return;
+          }
         }
       }
     }

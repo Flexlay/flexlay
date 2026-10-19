@@ -208,5 +208,28 @@ std::shared_ptr<ObjMapObject> make_editor_object(const std::string& type,
   return obj;
 }
 
+
+std::shared_ptr<ObjMapObject> clone_editor_object(const ObjMapObject& src,
+                                                  const Pointf& offset,
+                                                  const std::string& datadir)
+{
+  std::string type = src.name();
+  if (auto t = src.properties().get_as<std::string>("type")) {
+    type = *t;
+  }
+  float w = 32;
+  float h = 32;
+  if (const auto* rect = dynamic_cast<const ObjMapRectObject*>(&src)) {
+    w = rect->get_size().width;
+    h = rect->get_size().height;
+  }
+  Pointf pos = src.get_pos();
+  pos.x += offset.x;
+  pos.y += offset.y;
+  auto obj = make_editor_object(type, pos, w, h, src.properties(), datadir);
+  obj->set_name(src.name());
+  return obj;
+}
+
 } // namespace supertux
 } // namespace flexlay

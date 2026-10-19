@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-43.1-zorder-snap-5ef0589.bundle`
+**Current tip bundle:** `flexlay-44.1-save-dup-nudge-5ef0589.bundle`
 
 ---
 
@@ -573,6 +573,12 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - Keys: PageUp/PageDown (Ctrl = extreme), `]` / `[`
 - Edit menu: Raise/Lower/Top/Bottom
 - Place tool: snap to 32px grid (toolbar **Snap** toggle, on by default)
+
+### 2026-10-19 — Save, duplicate, arrow nudge
+
+- **File → Save** (Ctrl+S) overwrites last opened/saved path; falls back to Save As
+- **Edit → Duplicate** / **Ctrl+D** clones selection (+32,+32)
+- Arrow keys nudge selection (1px; **Shift** = 32px tile step)
 
 ### Concrete next steps
 

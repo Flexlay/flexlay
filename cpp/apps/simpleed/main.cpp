@@ -675,6 +675,7 @@ int main(int argc, char* argv[])
 
   auto last_level_name = std::make_shared<std::string>("unnamed");
   auto last_level_meta = std::make_shared<flexlay::supertux::LoadedLevel>();
+  auto last_level_path = std::make_shared<std::string>();
 
   QObject::connect(new_act, &QAction::triggered, [&, workspace, map_widget, paint_tool, fill_tool,
                    select_tool, place_tool, tile_selector, layer_selector, props_widget,
@@ -731,6 +732,7 @@ int main(int argc, char* argv[])
     sector_combo->setEnabled(false);
     sector_combo->blockSignals(false);
     *last_level_name = "unnamed";
+    *last_level_path = {};
     *last_level_meta = flexlay::supertux::LoadedLevel{};
     last_level_meta->name = "unnamed";
     last_level_meta->version = 4;
@@ -804,6 +806,7 @@ int main(int argc, char* argv[])
       }
       *last_level_name = level.name.empty() ? "unnamed" : level.name;
       *last_level_meta = level; // keep author/license/tileset for save
+      *last_level_path = path.toStdString();
       {
         QSettings settings(QStringLiteral("Flexlay"), QStringLiteral("SuperTuxEditor"));
         QStringList recent = settings.value(QStringLiteral("recentFiles")).toStringList();
@@ -907,12 +910,47 @@ int main(int argc, char* argv[])
   });
 
 
+  auto* save_overwrite_act = file_menu->addAction(QStringLiteral("Save"));
+  save_overwrite_act->setShortcut(QKeySequence::Save);
   auto* save_act = file_menu->addAction(QStringLiteral("Save As…"));
   save_act->setShortcut(QKeySequence::SaveAs);
   file_menu->addSeparator();
   auto* quit_act = file_menu->addAction(QStringLiteral("Quit"));
   quit_act->setShortcut(QKeySequence::Quit);
   QObject::connect(quit_act, &QAction::triggered, &window, &QMainWindow::close);
+
+
+  auto do_save_to = [&, workspace, last_level_name, last_level_meta, last_level_path](const std::string& path) {
+    auto map = workspace->get_map();
+    if (!map || path.empty()) {
+      return false;
+    }
+    try {
+      const std::string sec = last_level_meta->sector_name();
+      auto level = flexlay::supertux::level_from_editor_map(
+        *map, *last_level_name, sec.empty() ? "main" : sec,
+        last_level_meta->version > 0 ? last_level_meta->version : 4,
+        last_level_meta.get());
+      *last_level_meta = level;
+      flexlay::supertux::save_level_file(level, path);
+      *last_level_path = path;
+      map->set_modified(false);
+      window.statusBar()->showMessage(
+        QStringLiteral("Saved %1").arg(QString::fromStdString(path)));
+      return true;
+    } catch (const std::exception& ex) {
+      QMessageBox::warning(&window, QStringLiteral("Save Level"), QString::fromUtf8(ex.what()));
+      return false;
+    }
+  };
+
+  QObject::connect(save_overwrite_act, &QAction::triggered, [&, do_save_to, last_level_path, save_act]() {
+    if (last_level_path->empty()) {
+      save_act->trigger();
+      return;
+    }
+    do_save_to(*last_level_path);
+  });
 
   auto* edit_menu = window.menuBar()->addMenu(QStringLiteral("&Edit"));
   auto* undo_act = edit_menu->addAction(QStringLiteral("Undo"));
@@ -1396,6 +1434,7 @@ int main(int argc, char* argv[])
         last_level_meta.get());
       *last_level_meta = level;
       flexlay::supertux::save_level_file(level, path.toStdString());
+      *last_level_path = path.toStdString();
       map->set_modified(false);
       window.statusBar()->showMessage(
         QStringLiteral("Saved %1 (%2 sectors, active %3: %4 tilemaps, %5 objects)")
