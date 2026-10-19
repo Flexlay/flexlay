@@ -340,10 +340,17 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - List `editor_map_widget.hpp` in `flexlay` target sources + `AUTOMOC ON`
 - Fixes undefined `map_changed`, `staticMetaObject`, vtable at link
 
+### 2026-10-19 — TileBrush
+
+- **TileBrush** (w×h stamp, opaque vs transparent zero)
+- **PaintCommand::paint_brush** stamps with undo
+- **TilePaintTool** brush size 1–16; grid-aligned drag
+- simpleed: brush size buttons 1/2/3/5
+
 ### Concrete next steps
 
-1. ~~Scaffold through object CRUD + resize + flake~~  
-2. Multi-tile brushes / tile selector UI  
+1. ~~Scaffold through brushes~~  
+2. Tile selector UI / copy brush from map region  
 3. Sprite objects / pixel buffer load  
 4. SuperTux + Python embed after simpleed is useful
 

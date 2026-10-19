@@ -16,7 +16,15 @@ void TilePaintTool::paint_at(Workspace& workspace, const Pointf& world_pos)
   const int ts = m_layer->tileset().get_tile_size();
   const int tx = static_cast<int>(std::floor(world_pos.x / static_cast<float>(ts)));
   const int ty = static_cast<int>(std::floor(world_pos.y / static_cast<float>(ts)));
-  m_command->paint_cell(tx, ty, m_tile_id);
+  // Align stamp to brush grid so dragging doesn't shift pattern
+  const int ax = (m_brush.width() > 1) ? (tx - (tx % m_brush.width())) : tx;
+  const int ay = (m_brush.height() > 1) ? (ty - (ty % m_brush.height())) : ty;
+  if (ax == m_last_tx && ay == m_last_ty) {
+    return;
+  }
+  m_last_tx = ax;
+  m_last_ty = ay;
+  m_command->paint_brush(ax, ay, m_brush);
   if (auto* map = workspace.map()) {
     map->set_modified(true);
     map->bump_serial();
@@ -29,6 +37,8 @@ void TilePaintTool::on_mouse_down(Workspace& workspace, const Pointf& world_pos,
     return;
   }
   m_active = true;
+  m_last_tx = -999999;
+  m_last_ty = -999999;
   m_command = std::make_shared<PaintCommand>(m_layer);
   paint_at(workspace, world_pos);
 }

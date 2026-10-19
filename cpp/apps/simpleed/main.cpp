@@ -117,6 +117,16 @@ int main(int argc, char* argv[])
   make_tile_btn(3, QStringLiteral("3 Red"), QColor(205, 92, 92));
   make_tile_btn(4, QStringLiteral("4 Yellow"), QColor(238, 221, 130));
   make_tile_btn(5, QStringLiteral("5 Purple"), QColor(147, 112, 219));
+
+  side_layout->addWidget(new QLabel(QStringLiteral("Brush size:"), sidebar));
+  for (int sz : {1, 2, 3, 5}) {
+    auto* btn = new QPushButton(QString::number(sz), sidebar);
+    QObject::connect(btn, &QPushButton::clicked, [paint_tool, workspace, sz]() {
+      paint_tool->set_brush_size(sz);
+      workspace->set_tool(paint_tool);
+    });
+    side_layout->addWidget(btn);
+  }
   side_layout->addStretch(1);
 
   auto* map_widget = new flexlay::EditorMapWidget(central);
@@ -151,9 +161,10 @@ int main(int argc, char* argv[])
 
   auto update_status = [&]() {
     window.statusBar()->showMessage(
-      QStringLiteral("Paint/Select | LMB edit | MMB pan | Wheel zoom | Ctrl+Z/Y | undo=%1 redo=%2")
-        .arg(editor_map->undo_stack_size())
-        .arg(editor_map->redo_stack_size()));
+      QStringLiteral("Paint/Select | LMB edit | MMB pan | Wheel | Ctrl+Z/Y | brush=%1x%1 tile=%2 | undo=%3")
+        .arg(paint_tool->brush_size())
+        .arg(paint_tool->tile_id())
+        .arg(editor_map->undo_stack_size()));
   };
   QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, update_status);
   update_status();

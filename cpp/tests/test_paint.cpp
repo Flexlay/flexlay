@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "flexlay/commands/paint_command.hpp"
+#include "flexlay/tile_brush.hpp"
 #include "flexlay/editor_map.hpp"
 #include "flexlay/tile.hpp"
 #include "flexlay/tilemap_layer.hpp"
@@ -48,6 +49,30 @@ int main()
   CHECK(layer->field().at(1, 1) == 0);
   map->undo();
   CHECK(layer->field().at(1, 1) == 1);
+
+  // Multi-tile brush stamp
+  auto cmd3 = std::make_shared<PaintCommand>(layer);
+  auto brush = TileBrush::filled(2, 2, 1, true);
+  cmd3->paint_brush(0, 0, brush);
+  CHECK(layer->field().at(0, 0) == 1);
+  CHECK(layer->field().at(1, 0) == 1);
+  CHECK(layer->field().at(0, 1) == 1);
+  CHECK(layer->field().at(1, 1) == 1);
+  map->execute(cmd3);
+  map->undo();
+  CHECK(layer->field().at(0, 0) == 0);
+
+  // Transparent zero skips
+  auto sparse = TileBrush(2, 1);
+  sparse.put(0, 0, 1);
+  sparse.put(1, 0, 0);
+  sparse.set_opaque(false);
+  layer->field().put(0, 2, 0);
+  layer->field().put(1, 2, 2);
+  auto cmd4 = std::make_shared<PaintCommand>(layer);
+  cmd4->paint_brush(0, 2, sparse);
+  CHECK(layer->field().at(0, 2) == 1);
+  CHECK(layer->field().at(1, 2) == 2); // unchanged
 
   std::cout << "test_paint: ok\n";
   return 0;

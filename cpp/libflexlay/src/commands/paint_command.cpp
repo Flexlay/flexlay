@@ -16,7 +16,7 @@ PaintCommand::PaintCommand(std::shared_ptr<TilemapLayer> layer)
   }
 }
 
-void PaintCommand::paint_cell(int x, int y, uint32_t tile_id)
+void PaintCommand::record_cell(int x, int y, uint32_t tile_id)
 {
   Field& field = m_layer->field();
   if (x < 0 || y < 0 || x >= field.width() || y >= field.height()) {
@@ -42,6 +42,24 @@ void PaintCommand::paint_cell(int x, int y, uint32_t tile_id)
   field.put(x, y, tile_id);
   m_changes.push_back(CellChange{x, y, old_id, tile_id});
   m_applied = true;
+}
+
+void PaintCommand::paint_cell(int x, int y, uint32_t tile_id)
+{
+  record_cell(x, y, tile_id);
+}
+
+void PaintCommand::paint_brush(int x, int y, const TileBrush& brush)
+{
+  for (int by = 0; by < brush.height(); ++by) {
+    for (int bx = 0; bx < brush.width(); ++bx) {
+      const uint32_t id = brush.at(bx, by);
+      if (!brush.is_opaque() && id == 0) {
+        continue;
+      }
+      record_cell(x + bx, y + by, id);
+    }
+  }
 }
 
 void PaintCommand::execute()
