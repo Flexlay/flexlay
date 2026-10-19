@@ -11,6 +11,8 @@ set(FLEXLAY_CORE_SOURCES
   src/objmap_sprite_object.cpp
   src/pixel_buffer.cpp
   src/sprite.cpp
+  src/util/sexpr.cpp
+  src/supertux/level_loader.cpp
   src/commands/paint_command.cpp
   src/commands/object_move_command.cpp
   src/commands/object_add_command.cpp

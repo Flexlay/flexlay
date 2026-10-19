@@ -64,3 +64,34 @@ the tip of `master` at the start of that work:
 - SuperTux short-term: **embedded CPython** for load/save only.
 - Objects: **ECS-like, data-driven** properties/components with
   **constraint hooks** for game rules that change often.
+
+
+## SuperTux format reference (SuperTux-Origins)
+
+Use **https://github.com/SuperTux-Origins/supertux** as the canonical game tree.
+
+Format notes vs older Flexlay/Python assumptions:
+
+| Asset | Older | SuperTux-Origins |
+|-------|--------|------------------|
+| Level files | `.stl` | primarily **`.stlv`** (still `supertux-level` root) |
+| Tileset files | `.strf` / `supertux-tiles` | **`.stts`** / **`supertux-tileset`** |
+| Tileset path | `data/images/tiles.strf` | `data/images/tiles.stts` |
+| New empty level | — | `levelN.stlv` (see `LevelParser::from_nothing`) |
+
+Level structure (relevant to the C++ loader):
+
+```
+(supertux-level
+  (version 4)
+  (name "...")
+  (sectors
+    (sector
+      (name "main")
+      (objects
+        (tilemap (width W) (height H) (z-pos Z) (solid #t/#f) (tiles ...))
+        ... other game objects skipped for now ...
+      ))))
+```
+
+C++ entry points: `flexlay::supertux::load_level_file`, `editor_map_from_level`.

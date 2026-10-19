@@ -373,11 +373,22 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **TilemapLayer::draw** uses `draw_image` when tile has image, else solid color
 - simpleed patterned demo tiles
 
+### 2026-10-19 — SuperTux-Origins level load
+
+Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
+
+- Format: levels **`.stlv`** / `supertux-level`; tilesets **`.stts`** / `supertux-tileset`
+- **sexpr** parser; **supertux::load_level_*** reads first sector tilemaps
+- **editor_map_from_level** builds EditorMap layers
+- **test_level_loader** green
+- Documented in AGENTS.md
+
 ### Concrete next steps
 
-1. ~~Scaffold through tile images~~  
-2. SuperTux tileset (.strf) / level (.stl) load (minimal)  
-3. Optional Python bridge only for complex game logic
+1. ~~Minimal .stlv tilemap load~~  
+2. `.stts` tileset parse + image paths (datadir)  
+3. Wire Open Level into simpleed / Qt file dialog  
+4. Game objects as property bags (ECS-like)
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 
