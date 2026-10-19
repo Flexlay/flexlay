@@ -8,6 +8,7 @@
 #include "flexlay/objmap_rect_object.hpp"
 #include "flexlay/objmap_sprite_object.hpp"
 #include "flexlay/pixel_buffer.hpp"
+#include "flexlay/supertux/sprite_loader.hpp"
 
 #include <unordered_map>
 
@@ -34,10 +35,10 @@ const std::unordered_map<std::string, ObjectVisualInfo>& visual_table()
     {"bonusblock", {"objects/bonus_block/full-0.png", Sizef(32, 32)}},
     {"infoblock", {"engine/editor/infoblock.png", Sizef(32, 32)}},
     {"candle", {"objects/candle/candle-1.png", Sizef(32, 64)}},
-    {"snowball", {"creatures/snowball/captain-left-0.png", Sizef(32, 32)}},
+    {"snowball", {"creatures/snowball/cpt-snowball.sprite", Sizef(32, 32)}},
     {"bouncing_snowball", {"creatures/bouncing_snowball/bouncing_snowball-editor.png", Sizef(32, 32)}},
-    {"mr_tree", {"creatures/mr_tree/small-left-0.png", Sizef(64, 64)}},
-    {"ghosttree", {"creatures/mr_tree/small-left-0.png", Sizef(96, 128)}},
+    {"mr_tree", {"creatures/mr_tree/mr_tree.sprite", Sizef(64, 64)}},
+    {"ghosttree", {"creatures/mr_tree/mr_tree.sprite", Sizef(96, 128)}},
     {"powerup", {"engine/editor/powerup.png", Sizef(32, 32)}},
     {"leveltime", {"engine/editor/clock.png", Sizef(32, 32)}},
     {"scripttrigger", {"engine/editor/point.png", Sizef(64, 32)}},
@@ -71,6 +72,15 @@ std::optional<Sprite> try_load_sprite(const std::string& datadir, const std::str
     rel = rel.substr(7);
   }
   const std::string path = datadir + "/images/" + rel;
+
+  // .sprite definition: resolve first frame PNG via sprite_loader
+  if (rel.size() > 7 && rel.compare(rel.size() - 7, 7, ".sprite") == 0) {
+    if (auto spr = load_sprite_from_def(path)) {
+      return spr;
+    }
+    return std::nullopt;
+  }
+
   try {
     return Sprite(PixelBuffer::from_file(path), rel);
   } catch (...) {
@@ -89,9 +99,7 @@ std::shared_ptr<ObjMapObject> make_editor_object(const std::string& type,
   if (auto sp = props.get_as<std::string>("sprite")) {
     image_rel = *sp;
     // .sprite files are not loadable as PNG — try common PNG sibling if needed
-    if (image_rel.size() > 7 && image_rel.compare(image_rel.size() - 7, 7, ".sprite") == 0) {
-      image_rel.clear(); // fall back to type default
-    }
+    // .sprite paths are resolved by try_load_sprite
   }
   Sizef size(width > 0 ? width : 32.0f, height > 0 ? height : 32.0f);
   if (auto info = object_visual_info(type)) {

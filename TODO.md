@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-32.1-sector-meta-props-refresh-5ef0589.bundle`
+**Current tip bundle:** `flexlay-33.1-sprite-def-loader-5ef0589.bundle`
 
 ---
 
@@ -472,12 +472,20 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - Saver writes them back; meta merge preserves on Open→Save
 - simpleed: **map_changed** (incl. Ctrl+Z/Y) calls `PropertiesWidget::refresh`
 
+### 2026-10-19 — SuperTux .sprite definition loader
+
+- **sprite_loader**: parse `(supertux-sprite …)` actions + images
+- Prefer action names: default → editor → left → idle → normal → right
+- Resolve `mirror-action` to sibling action images
+- `try_load_sprite` accepts `.sprite` paths (editor uses first frame PNG)
+- snowball / mr_tree visual table entries point at `.sprite` files
+
 ### Concrete next steps
 
-1. ~~Sector gravity / ambient-light metadata~~  
-2. ~~Refresh PropertiesWidget UI after undo/redo~~  
-3. Load `.sprite` definition files (not only PNG frames)  
-4. Sector name list / multi-sector support  
+1. ~~Load `.sprite` definition files (first-frame editor use)~~  
+2. Sector name list / multi-sector support  
+3. Animate sprite actions in editor (optional)  
+4. Hitbox-aware placement guides from sprite defs  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 
