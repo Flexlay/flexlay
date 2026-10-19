@@ -4,13 +4,18 @@
 
 #include "flexlay/supertux/level_loader.hpp"
 
+#include "flexlay/color.hpp"
+#include "flexlay/object_layer.hpp"
+#include "flexlay/objmap_rect_object.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/util/sexpr.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <unordered_set>
 
 namespace flexlay {
 namespace supertux {
@@ -51,6 +56,19 @@ int child_int(const SExpr& list, const std::string& tag, int def = 0)
   }
 }
 
+float child_float(const SExpr& list, const std::string& tag, float def = 0.0f)
+{
+  const std::string a = child_atom(list, tag);
+  if (a.empty()) {
+    return def;
+  }
+  try {
+    return std::stof(a);
+  } catch (...) {
+    return def;
+  }
+}
+
 bool child_bool(const SExpr& list, const std::string& tag, bool def = false)
 {
   const std::string a = child_atom(list, tag);
@@ -63,47 +81,149 @@ bool child_bool(const SExpr& list, const std::string& tag, bool def = false)
 LoadedTilemap parse_tilemap(const SExpr& node)
 {
   LoadedTilemap tm;
+  tm.name = child_atom(node, "name");
   tm.width = child_int(node, "width");
   tm.height = child_int(node, "height");
   tm.solid = child_bool(node, "solid");
   tm.z_pos = child_int(node, "z-pos");
-  tm.name = child_atom(node, "name");
 
   const SExpr* tiles = find_child(node, "tiles");
   if (tiles && tiles->is_list()) {
     for (size_t i = 1; i < tiles->as_list().size(); ++i) {
-      const auto& cell = tiles->as_list()[i];
-      if (!cell.is_atom()) {
+      const auto& a = tiles->as_list()[i];
+      if (!a.is_atom()) {
         continue;
       }
       try {
-        tm.tiles.push_back(static_cast<uint32_t>(std::stoul(cell.as_atom())));
+        tm.tiles.push_back(static_cast<uint32_t>(std::stoul(a.as_atom())));
       } catch (...) {
         tm.tiles.push_back(0);
       }
     }
   }
-
-  const size_t expect = static_cast<size_t>(std::max(0, tm.width) * std::max(0, tm.height));
-  if (tm.tiles.size() < expect) {
-    tm.tiles.resize(expect, 0);
-  } else if (tm.tiles.size() > expect && expect > 0) {
-    tm.tiles.resize(expect);
-  }
   return tm;
 }
 
-void collect_tilemaps(const SExpr& objects_node, std::vector<LoadedTilemap>& out)
+/** Tags that are sector infrastructure, not placeable game objects. */
+bool is_skipped_object_tag(const std::string& tag)
+{
+  static const std::unordered_set<std::string> skip = {
+    "tilemap", "camera", "ambient-light", "gravity", "music", "init-script",
+    "background", "gradient", "thunderstorm", "particles-*" // not exact
+  };
+  if (skip.count(tag)) {
+    return true;
+  }
+  // particle systems / backgrounds often start with these
+  if (tag.find("particles") != std::string::npos) {
+    return true;
+  }
+  if (tag.rfind("background", 0) == 0) {
+    return true;
+  }
+  return false;
+}
+
+PropertyValue atom_to_prop(const std::string& a)
+{
+  if (a == "#t" || a == "true") {
+    return true;
+  }
+  if (a == "#f" || a == "false") {
+    return false;
+  }
+  try {
+    if (a.find('.') != std::string::npos) {
+      return std::stof(a);
+    }
+    // large numbers stay as int if they fit
+    long long v = std::stoll(a);
+    if (v >= static_cast<long long>(std::numeric_limits<int>::min()) &&
+        v <= static_cast<long long>(std::numeric_limits<int>::max())) {
+      return static_cast<int>(v);
+    }
+  } catch (...) {
+  }
+  return a;
+}
+
+LoadedObject parse_object(const SExpr& node)
+{
+  LoadedObject obj;
+  obj.type = node.tag();
+  obj.x = child_float(node, "x");
+  obj.y = child_float(node, "y");
+  obj.width = child_float(node, "width", 32.0f);
+  obj.height = child_float(node, "height", 32.0f);
+
+  if (!node.is_list()) {
+    return obj;
+  }
+  for (size_t i = 1; i < node.as_list().size(); ++i) {
+    const auto& child = node.as_list()[i];
+    if (!child.is_list() || child.as_list().empty()) {
+      continue;
+    }
+    const std::string key = child.tag();
+    if (key.empty() || key == "x" || key == "y" || key == "width" || key == "height") {
+      continue;
+    }
+    // single atom value
+    if (child.as_list().size() == 2 && child.as_list()[1].is_atom()) {
+      obj.props.set(key, atom_to_prop(child.as_list()[1].as_atom()));
+      continue;
+    }
+    // multi-value: store as space-joined string for now
+    if (child.as_list().size() > 2) {
+      std::ostringstream ss;
+      for (size_t j = 1; j < child.as_list().size(); ++j) {
+        if (j > 1) {
+          ss << ' ';
+        }
+        if (child.as_list()[j].is_atom()) {
+          ss << child.as_list()[j].as_atom();
+        }
+      }
+      obj.props.set(key, ss.str());
+    }
+  }
+  return obj;
+}
+
+void collect_objects(const SExpr& objects_node, std::vector<LoadedTilemap>& tilemaps,
+                     std::vector<LoadedObject>& objects)
 {
   if (!objects_node.is_list()) {
     return;
   }
   for (size_t i = 1; i < objects_node.as_list().size(); ++i) {
     const auto& obj = objects_node.as_list()[i];
-    if (obj.tag() == "tilemap") {
-      out.push_back(parse_tilemap(obj));
+    if (!obj.is_list()) {
+      continue;
     }
+    const std::string tag = obj.tag();
+    if (tag == "tilemap") {
+      tilemaps.push_back(parse_tilemap(obj));
+      continue;
+    }
+    if (is_skipped_object_tag(tag) || tag.empty()) {
+      continue;
+    }
+    objects.push_back(parse_object(obj));
   }
+}
+
+Color color_for_type(const std::string& type)
+{
+  // stable-ish color from type string
+  unsigned h = 2166136261u;
+  for (char c : type) {
+    h ^= static_cast<unsigned char>(c);
+    h *= 16777619u;
+  }
+  return Color(static_cast<int>(40 + (h % 180)),
+               static_cast<int>(40 + ((h >> 8) % 180)),
+               static_cast<int>(40 + ((h >> 16) % 180)), 180);
 }
 
 } // namespace
@@ -123,18 +243,18 @@ LoadedLevel load_level_text(const std::string& text)
   if (!sectors) {
     return level;
   }
-
+  // first sector
   for (size_t i = 1; i < sectors->as_list().size(); ++i) {
     const auto& sector = sectors->as_list()[i];
-    if (sector.tag() != "sector") {
+    if (!sector.is_list() || sector.tag() != "sector") {
       continue;
     }
     level.sector_name = child_atom(sector, "name", "main");
     const SExpr* objects = find_child(sector, "objects");
     if (objects) {
-      collect_tilemaps(*objects, level.tilemaps);
+      collect_objects(*objects, level.tilemaps, level.objects);
     }
-    break; // first sector only
+    break;
   }
 
   std::stable_sort(level.tilemaps.begin(), level.tilemaps.end(),
@@ -159,10 +279,10 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
                                                  std::shared_ptr<Tileset> tileset)
 {
   auto map = std::make_shared<EditorMap>();
-  int max_w = 0;
-  int max_h = 0;
   const int ts = tileset ? tileset->get_tile_size() : 32;
 
+  int max_w = 0;
+  int max_h = 0;
   for (const auto& tm : level.tilemaps) {
     max_w = std::max(max_w, tm.width);
     max_h = std::max(max_h, tm.height);
@@ -189,8 +309,22 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
     map->add_layer(layer);
   }
 
-  map->set_bounding_rect(Rectf(0, 0, static_cast<float>(max_w * ts),
-                               static_cast<float>(max_h * ts)));
+  auto object_layer = std::make_shared<ObjectLayer>();
+  object_layer->set_name("objects");
+  for (const auto& lo : level.objects) {
+    const float w = lo.width > 0 ? lo.width : 32.0f;
+    const float h = lo.height > 0 ? lo.height : 32.0f;
+    auto rect = std::make_shared<ObjMapRectObject>(
+      Pointf(lo.x, lo.y), Sizef(w, h), color_for_type(lo.type));
+    rect->set_name(lo.type);
+    rect->properties() = lo.props;
+    rect->properties().set("type", lo.type);
+    object_layer->add_object(rect);
+  }
+  map->add_layer(object_layer);
+
+  map->set_bounding_rect(Rectf(0, 0, static_cast<float>(std::max(max_w, 1) * ts),
+                               static_cast<float>(std::max(max_h, 1) * ts)));
   map->set_background_color(Color(45, 45, 55));
   return map;
 }

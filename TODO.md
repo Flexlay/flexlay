@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-26.1-properties-object-palette-5ef0589.bundle`
+**Current tip bundle:** `flexlay-27.1-place-load-objects-5ef0589.bundle`
 
 ---
 
@@ -426,14 +426,22 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - **ObjectSelectorWidget**: double-click or “Add at view center” places instance
 - simpleed: Properties + Objects docks (tabbed with Tiles)
 
+### 2026-10-19 — Place tool + load objects from levels
+
+- **PlaceObjectTool**: LMB places prototype at cursor (ghost preview); RMB cancels
+- **Level loader**: non-tilemap sector objects → `LoadedObject` + PropertyBag;
+  skipped: tilemap, camera, ambient-light, gravity, background, particles…
+- **editor_map_from_level** always adds an **objects** ObjectLayer
+- Prototypes: +snowball, scripttrigger, powerup, leveltime
+- simpleed: object palette activates place tool; Open Level shows object count
+
 ### Concrete next steps
 
-1. ~~… through layers/property bag…~~  
-2. ~~Property editor UI for selected object~~  
-3. ~~Object selector palette (data-driven types)~~  
-4. Load/save game objects from SuperTux levels (minimal subset)  
-5. Place-object click tool (instead of view-center only)  
-6. Expand prototype table toward common SuperTux types  
+1. ~~Place-object click tool~~  
+2. ~~Load game objects from SuperTux levels (minimal subset)~~  
+3. Save level (tilemaps + objects) back to `.stlv` sexpr  
+4. Click-to-select then edit properties after place  
+5. More accurate object sizes/sprites from SuperTux data  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

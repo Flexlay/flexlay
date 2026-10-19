@@ -22,6 +22,7 @@ set(FLEXLAY_CORE_SOURCES
   src/tools/tile_paint_tool.cpp
   src/tools/tile_fill_tool.cpp
   src/tools/objmap_select_tool.cpp
+  src/tools/place_object_tool.cpp
 )
 
 add_library(flexlay STATIC ${FLEXLAY_CORE_SOURCES})

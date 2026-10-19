@@ -14,6 +14,7 @@
 #include "flexlay/tileset.hpp"
 #include "flexlay/commands/object_add_command.hpp"
 #include "flexlay/tools/objmap_select_tool.hpp"
+#include "flexlay/tools/place_object_tool.hpp"
 #include "flexlay/tools/tile_fill_tool.hpp"
 #include "flexlay/tools/tile_paint_tool.hpp"
 #include "flexlay/supertux/level_loader.hpp"
@@ -137,6 +138,9 @@ int main(int argc, char* argv[])
   auto select_tool = std::make_shared<flexlay::ObjMapSelectTool>();
   select_tool->set_object_layer(object_layer);
 
+  auto place_tool = std::make_shared<flexlay::PlaceObjectTool>();
+  place_tool->set_object_layer(object_layer);
+
   auto workspace = std::make_shared<flexlay::Workspace>();
   workspace->set_map(editor_map);
   workspace->set_tool(paint_tool);
@@ -236,8 +240,9 @@ int main(int argc, char* argv[])
                      map_widget->update();
                    });
   QObject::connect(layer_selector, &flexlay::LayerSelectorWidget::object_layer_activated,
-                   [select_tool, workspace, map_widget](std::shared_ptr<flexlay::ObjectLayer> ol) {
+                   [select_tool, place_tool, workspace, map_widget](std::shared_ptr<flexlay::ObjectLayer> ol) {
                      select_tool->set_object_layer(ol);
+          place_tool->set_object_layer(ol);
                      workspace->set_tool(select_tool);
                      map_widget->update();
                    });
@@ -291,36 +296,32 @@ int main(int argc, char* argv[])
   QObject::connect(props_widget, &flexlay::PropertiesWidget::properties_changed,
                    [map_widget]() { map_widget->update(); });
 
-  auto place_prototype = [workspace, object_layer, select_tool, editor_map, map_widget, props_widget](
-                           const flexlay::ObjectPrototype& proto) {
-    // place near view center
-    // view placement
-    // approximate: use map mid or fixed offset
-    flexlay::Pointf pos(128, 128);
-    if (auto* map = workspace->map()) {
-      if (map->has_bounding_rect()) {
-        const auto br = map->bounding_rect();
-        pos = flexlay::Pointf((br.left + br.right) * 0.5f, (br.top + br.bottom) * 0.5f);
-      }
-    }
-    auto obj = proto.instantiate(pos);
-    object_layer->clear_selection();
-    auto cmd = std::make_shared<flexlay::ObjectAddCommand>(object_layer);
-    cmd->add_object(obj);
-    editor_map->execute(cmd);
-    obj->set_selected(true);
-    props_widget->set_object(obj);
-    workspace->set_tool(select_tool);
+  auto activate_place_tool = [place_tool, workspace, map_widget, select_tool, props_widget](
+                               const flexlay::ObjectPrototype& proto) {
+    place_tool->set_prototype(proto);
+    place_tool->on_placed = [props_widget, map_widget, select_tool, workspace](
+                              std::shared_ptr<flexlay::ObjMapObject> obj) {
+      props_widget->set_object(obj);
+      // stay in place mode for rapid placement; user switches tool to stop
+      map_widget->update();
+    };
+    place_tool->on_cancelled = [workspace, select_tool, map_widget]() {
+      workspace->set_tool(select_tool);
+      map_widget->update();
+    };
+    workspace->set_tool(place_tool);
+    map_widget->setFocus();
     map_widget->update();
   };
 
   QObject::connect(obj_selector, &flexlay::ObjectSelectorWidget::prototype_activated,
-                   place_prototype);
-  QObject::connect(add_obj_btn, &QPushButton::clicked, [obj_selector, place_prototype]() {
+                   activate_place_tool);
+  QObject::connect(add_obj_btn, &QPushButton::clicked, [obj_selector, activate_place_tool]() {
     if (const auto* p = obj_selector->current_prototype()) {
-      place_prototype(*p);
+      activate_place_tool(*p);
     }
   });
+
 
   // Keep last loaded tilegroups for combo switching
   auto tilegroups = std::make_shared<std::vector<flexlay::supertux::TileGroupInfo>>();
@@ -482,6 +483,7 @@ int main(int argc, char* argv[])
       for (const auto& layer : new_map->layers()) {
         if (auto ol = std::dynamic_pointer_cast<flexlay::ObjectLayer>(layer)) {
           select_tool->set_object_layer(ol);
+          place_tool->set_object_layer(ol);
           break;
         }
       }
@@ -503,9 +505,10 @@ int main(int argc, char* argv[])
       group_combo->blockSignals(false);
       map_widget->update();
       window.statusBar()->showMessage(
-        QStringLiteral("Loaded %1 (%2 tilemaps, %3 tiles with images, %4 groups)")
+        QStringLiteral("Loaded %1 (%2 tilemaps, %3 objects, %4 tiles w/ images, %5 groups)")
           .arg(QString::fromStdString(level.name))
           .arg(level.tilemaps.size())
+          .arg(level.objects.size())
           .arg(image_tiles)
           .arg(tilegroups->size()));
     } catch (const std::exception& ex) {

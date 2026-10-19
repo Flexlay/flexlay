@@ -8,13 +8,13 @@
 /**
  * Minimal SuperTux level loader targeting SuperTux-Origins format:
  * - Levels: (supertux-level ...) typically in .stlv (legacy .stl still ok)
- * - Tilesets: (supertux-tileset ...) in .stts (replaces older .strf / supertux-tiles)
+ * - Tilesets: (supertux-tileset ...) in .stts
  *
- * Loads the first sector's tilemap layers into EditorMap + Field data.
- * Objects beyond tilemaps are skipped for now.
+ * Loads first sector tilemaps + a subset of game objects into EditorMap.
  */
 
 #include "flexlay/editor_map.hpp"
+#include "flexlay/property_bag.hpp"
 #include "flexlay/tileset.hpp"
 
 #include <memory>
@@ -34,12 +34,24 @@ struct LoadedTilemap
   std::vector<uint32_t> tiles; // row-major, size width*height
 };
 
+/** Generic game object: type tag + property bag (x/y/width/height extracted). */
+struct LoadedObject
+{
+  std::string type;
+  float x = 0;
+  float y = 0;
+  float width = 32;
+  float height = 32;
+  PropertyBag props;
+};
+
 struct LoadedLevel
 {
   std::string name;
   int version = 0;
   std::string sector_name;
   std::vector<LoadedTilemap> tilemaps;
+  std::vector<LoadedObject> objects;
 };
 
 /** Parse level from sexpr text or file path. */
@@ -47,8 +59,8 @@ LoadedLevel load_level_text(const std::string& text);
 LoadedLevel load_level_file(const std::string& path);
 
 /**
- * Build an EditorMap from loaded tilemaps.
- * Uses provided tileset (tile size for bounds). Unknown tile ids remain in field.
+ * Build an EditorMap from loaded tilemaps + objects.
+ * Objects become ObjMapRectObject entries on an "objects" ObjectLayer.
  */
 std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
                                                  std::shared_ptr<Tileset> tileset);

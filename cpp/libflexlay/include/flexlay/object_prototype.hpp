@@ -98,6 +98,45 @@ inline std::vector<ObjectPrototype> default_object_prototypes()
     out.push_back(std::move(p));
   }
 
+
+  {
+    ObjectPrototype p;
+    p.type_id = "snowball";
+    p.label = "Snowball";
+    p.default_size = Sizef(32, 32);
+    p.default_color = Color(220, 230, 255, 200);
+    p.defaults.set("direction", std::string("auto"));
+    out.push_back(std::move(p));
+  }
+  {
+    ObjectPrototype p;
+    p.type_id = "scripttrigger";
+    p.label = "Script trigger";
+    p.default_size = Sizef(64, 32);
+    p.default_color = Color(180, 100, 255, 140);
+    p.defaults.set("script", std::string(""));
+    p.defaults.set("button", false);
+    out.push_back(std::move(p));
+  }
+  {
+    ObjectPrototype p;
+    p.type_id = "powerup";
+    p.label = "Powerup";
+    p.default_size = Sizef(32, 32);
+    p.default_color = Color(255, 80, 80, 200);
+    p.defaults.set("sprite", std::string(""));
+    out.push_back(std::move(p));
+  }
+  {
+    ObjectPrototype p;
+    p.type_id = "leveltime";
+    p.label = "Level time";
+    p.default_size = Sizef(32, 32);
+    p.default_color = Color(100, 100, 255, 160);
+    p.defaults.set("time", 300);
+    out.push_back(std::move(p));
+  }
+
   return out;
 }
 
