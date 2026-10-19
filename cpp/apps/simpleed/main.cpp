@@ -224,7 +224,14 @@ int main(int argc, char* argv[])
   tile_dock_layout->addWidget(tile_scroll, 1);
   tile_dock->setWidget(tile_dock_inner);
   window.addDockWidget(Qt::RightDockWidgetArea, tile_dock);
+  // Sector combo is in the Objects sidebar
 
+
+  // Sector selector (multi-sector levels)
+  auto* sector_combo = new QComboBox(&window);
+  sector_combo->setToolTip(QStringLiteral("Active SuperTux sector"));
+  sector_combo->setEnabled(false);
+  sector_combo->addItem(QStringLiteral("main"));
 
   // Layers dock
   auto* layer_dock = new QDockWidget(QStringLiteral("Layers"), &window);
@@ -276,6 +283,10 @@ int main(int argc, char* argv[])
   auto* obj_selector = new flexlay::ObjectSelectorWidget(obj_inner);
   obj_selector->set_prototypes(flexlay::default_object_prototypes());
   auto* add_obj_btn = new QPushButton(QStringLiteral("Add at view center"), obj_inner);
+  obj_layout->addWidget(new QLabel(QStringLiteral("Sector:"), obj_inner));
+  // reparent sector combo into dock
+  sector_combo->setParent(obj_inner);
+  obj_layout->addWidget(sector_combo);
   obj_layout->addWidget(obj_selector, 1);
   obj_layout->addWidget(add_obj_btn);
   obj_dock->setWidget(obj_inner);
@@ -471,7 +482,7 @@ int main(int argc, char* argv[])
       if (!ts) {
         ts = std::make_shared<flexlay::Tileset>(tile_size);
       }
-      for (const auto& tm : level.tilemaps) {
+      for (const auto& tm : level.tilemaps()) {
         for (uint32_t id : tm.tiles) {
           if (id != 0 && !ts->has_tile(static_cast<int>(id))) {
             const uint8_t r = static_cast<uint8_t>(40 + (id * 37) % 180);
@@ -521,13 +532,25 @@ int main(int argc, char* argv[])
       }
       group_combo->blockSignals(false);
       map_widget->update();
+      // Populate sector combo
+      sector_combo->blockSignals(true);
+      sector_combo->clear();
+      for (const auto& sn : level.sector_names()) {
+        sector_combo->addItem(QString::fromStdString(sn));
+      }
+      sector_combo->setCurrentIndex(static_cast<int>(level.active_sector));
+      sector_combo->setEnabled(level.sectors.size() > 1);
+      sector_combo->blockSignals(false);
+
       window.statusBar()->showMessage(
-        QStringLiteral("Loaded %1 (%2 tilemaps, %3 objects, %4 tiles w/ images, %5 groups)")
+        QStringLiteral("Loaded %1 [sector %2] (%3 tilemaps, %4 objects, %5 tiles w/ images, %6 groups, %7 sectors)")
           .arg(QString::fromStdString(level.name))
-          .arg(level.tilemaps.size())
-          .arg(level.objects.size())
+          .arg(QString::fromStdString(level.sector_name()))
+          .arg(level.tilemaps().size())
+          .arg(level.objects().size())
           .arg(image_tiles)
-          .arg(tilegroups->size()));
+          .arg(tilegroups->size())
+          .arg(level.sectors.size()));
     } catch (const std::exception& ex) {
       QMessageBox::warning(&window, QStringLiteral("Open Level"),
                            QString::fromUtf8(ex.what()));
@@ -549,21 +572,73 @@ int main(int argc, char* argv[])
       return;
     }
     try {
+      const std::string sec = last_level_meta->sector_name();
       auto level = flexlay::supertux::level_from_editor_map(
-        *map, *last_level_name, "main",
+        *map, *last_level_name, sec.empty() ? "main" : sec,
         last_level_meta->version > 0 ? last_level_meta->version : 4,
         last_level_meta.get());
+      *last_level_meta = level;
       flexlay::supertux::save_level_file(level, path.toStdString());
       map->set_modified(false);
       window.statusBar()->showMessage(
-        QStringLiteral("Saved %1 (%2 tilemaps, %3 objects)")
+        QStringLiteral("Saved %1 (%2 sectors, active %3: %4 tilemaps, %5 objects)")
           .arg(path)
-          .arg(level.tilemaps.size())
-          .arg(level.objects.size()));
+          .arg(level.sectors.size())
+          .arg(QString::fromStdString(level.sector_name()))
+          .arg(level.tilemaps().size())
+          .arg(level.objects().size()));
     } catch (const std::exception& ex) {
       QMessageBox::warning(&window, QStringLiteral("Save Level"),
                            QString::fromUtf8(ex.what()));
     }
+  });
+
+
+  QObject::connect(sector_combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                   [&, sector_combo](int idx) {
+    if (idx < 0 || !last_level_meta || last_level_meta->sectors.empty()) {
+      return;
+    }
+    if (static_cast<size_t>(idx) >= last_level_meta->sectors.size()) {
+      return;
+    }
+    // Persist current map into the previously active sector before switching
+    if (auto map = workspace->get_map()) {
+      const std::string prev = last_level_meta->sector_name();
+      *last_level_meta = flexlay::supertux::level_from_editor_map(
+        *map, *last_level_name, prev,
+        last_level_meta->version > 0 ? last_level_meta->version : 4,
+        last_level_meta.get());
+    }
+    last_level_meta->active_sector = static_cast<size_t>(idx);
+    auto ts = *current_tileset;
+    if (!ts) {
+      ts = std::make_shared<flexlay::Tileset>(32);
+    }
+    auto new_map = flexlay::supertux::editor_map_from_level(*last_level_meta, ts, supertux_datadir);
+    workspace->set_map(new_map);
+    for (const auto& layer : new_map->layers()) {
+      if (auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer)) {
+        paint_tool->set_tilemap(tml);
+        fill_tool->set_tilemap(tml);
+        break;
+      }
+    }
+    for (const auto& layer : new_map->layers()) {
+      if (auto ol = std::dynamic_pointer_cast<flexlay::ObjectLayer>(layer)) {
+        select_tool->set_object_layer(ol);
+        place_tool->set_object_layer(ol);
+        break;
+      }
+    }
+    layer_selector->set_map(new_map);
+    props_widget->clear();
+    map_widget->update();
+    window.statusBar()->showMessage(
+      QStringLiteral("Sector: %1 (%2 tilemaps, %3 objects)")
+        .arg(QString::fromStdString(last_level_meta->sector_name()))
+        .arg(last_level_meta->tilemaps().size())
+        .arg(last_level_meta->objects().size()));
   });
 
   window.resize(1100, 640);

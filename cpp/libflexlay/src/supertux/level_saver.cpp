@@ -66,6 +66,90 @@ std::string strip_solid_suffix(std::string name)
   return name;
 }
 
+void write_sector(std::ostream& out, const LoadedSector& sector)
+{
+  write_indent(out, 2);
+  out << "(sector\n";
+  write_indent(out, 3);
+  out << "(name \"" << escape_string(sector.name.empty() ? "main" : sector.name) << "\")\n";
+  write_indent(out, 3);
+  out << "(objects\n";
+
+  if (sector.has_gravity) {
+    write_indent(out, 4);
+    out << "(gravity " << sector.gravity << ")\n";
+  }
+  if (sector.has_ambient_light) {
+    write_indent(out, 4);
+    out << "(ambient-light " << sector.ambient_r << " " << sector.ambient_g << " "
+        << sector.ambient_b << " " << sector.ambient_a << ")\n";
+  }
+
+  for (const auto& tm : sector.tilemaps) {
+    write_indent(out, 4);
+    out << "(tilemap\n";
+    if (!tm.name.empty()) {
+      write_indent(out, 5);
+      out << "(name \"" << escape_string(strip_solid_suffix(tm.name)) << "\")\n";
+    }
+    write_indent(out, 5);
+    out << "(solid " << (tm.solid ? "#t" : "#f") << ")\n";
+    write_indent(out, 5);
+    out << "(z-pos " << tm.z_pos << ")\n";
+    write_indent(out, 5);
+    out << "(width " << tm.width << ")\n";
+    write_indent(out, 5);
+    out << "(height " << tm.height << ")\n";
+    write_indent(out, 5);
+    out << "(tiles";
+    for (size_t i = 0; i < tm.tiles.size(); ++i) {
+      if (i % 16 == 0) {
+        out << "\n";
+        write_indent(out, 6);
+      } else {
+        out << ' ';
+      }
+      out << tm.tiles[i];
+    }
+    out << ")\n";
+    write_indent(out, 4);
+    out << ")\n";
+  }
+
+  for (const auto& obj : sector.objects) {
+    write_indent(out, 4);
+    out << '(' << (obj.type.empty() ? "unknown" : obj.type) << '\n';
+    write_indent(out, 5);
+    out << "(x " << obj.x << ")\n";
+    write_indent(out, 5);
+    out << "(y " << obj.y << ")\n";
+    if (obj.width > 0 && std::fabs(obj.width - 32.0f) > 0.01f) {
+      write_indent(out, 5);
+      out << "(width " << obj.width << ")\n";
+    }
+    if (obj.height > 0 && std::fabs(obj.height - 32.0f) > 0.01f) {
+      write_indent(out, 5);
+      out << "(height " << obj.height << ")\n";
+    }
+    for (const auto& kv : obj.props.values()) {
+      if (kv.first == "type") {
+        continue;
+      }
+      write_indent(out, 5);
+      out << '(' << kv.first << ' ';
+      write_atom(out, kv.second);
+      out << ")\n";
+    }
+    write_indent(out, 4);
+    out << ")\n";
+  }
+
+  write_indent(out, 3);
+  out << ")\n"; // objects
+  write_indent(out, 2);
+  out << ")\n"; // sector
+}
+
 } // namespace
 
 std::string save_level_text(const LoadedLevel& level)
@@ -98,87 +182,18 @@ std::string save_level_text(const LoadedLevel& level)
   }
   write_indent(out, 1);
   out << "(sectors\n";
-  write_indent(out, 2);
-  out << "(sector\n";
-  write_indent(out, 3);
-  out << "(name \"" << escape_string(level.sector_name.empty() ? "main" : level.sector_name)
-      << "\")\n";
-  write_indent(out, 3);
-  out << "(objects\n";
 
-  if (level.has_gravity) {
-    write_indent(out, 4);
-    out << "(gravity " << level.gravity << ")\n";
-  }
-  if (level.has_ambient_light) {
-    write_indent(out, 4);
-    out << "(ambient-light " << level.ambient_r << " " << level.ambient_g << " "
-        << level.ambient_b << " " << level.ambient_a << ")\n";
+  if (level.sectors.empty()) {
+    // Synthesize a single empty main sector so the file stays valid
+    LoadedSector empty;
+    empty.name = "main";
+    write_sector(out, empty);
+  } else {
+    for (const auto& sector : level.sectors) {
+      write_sector(out, sector);
+    }
   }
 
-  for (const auto& tm : level.tilemaps) {
-    write_indent(out, 4);
-    out << "(tilemap\n";
-    if (!tm.name.empty()) {
-      write_indent(out, 5);
-      out << "(name \"" << escape_string(strip_solid_suffix(tm.name)) << "\")\n";
-    }
-    write_indent(out, 5);
-    out << "(solid " << (tm.solid ? "#t" : "#f") << ")\n";
-    write_indent(out, 5);
-    out << "(z-pos " << tm.z_pos << ")\n";
-    write_indent(out, 5);
-    out << "(width " << tm.width << ")\n";
-    write_indent(out, 5);
-    out << "(height " << tm.height << ")\n";
-    write_indent(out, 5);
-    out << "(tiles";
-    for (size_t i = 0; i < tm.tiles.size(); ++i) {
-      if (i % 16 == 0) {
-        out << "\n";
-        write_indent(out, 6);
-      } else {
-        out << ' ';
-      }
-      out << tm.tiles[i];
-    }
-    out << ")\n";
-    write_indent(out, 4);
-    out << ")\n";
-  }
-
-  for (const auto& obj : level.objects) {
-    write_indent(out, 4);
-    out << '(' << (obj.type.empty() ? "unknown" : obj.type) << '\n';
-    write_indent(out, 5);
-    out << "(x " << obj.x << ")\n";
-    write_indent(out, 5);
-    out << "(y " << obj.y << ")\n";
-    if (obj.width > 0 && std::fabs(obj.width - 32.0f) > 0.01f) {
-      write_indent(out, 5);
-      out << "(width " << obj.width << ")\n";
-    }
-    if (obj.height > 0 && std::fabs(obj.height - 32.0f) > 0.01f) {
-      write_indent(out, 5);
-      out << "(height " << obj.height << ")\n";
-    }
-    for (const auto& kv : obj.props.values()) {
-      if (kv.first == "type") {
-        continue; // encoded as sexpr tag
-      }
-      write_indent(out, 5);
-      out << '(' << kv.first << ' ';
-      write_atom(out, kv.second);
-      out << ")\n";
-    }
-    write_indent(out, 4);
-    out << ")\n";
-  }
-
-  write_indent(out, 3);
-  out << ")\n"; // objects
-  write_indent(out, 2);
-  out << ")\n"; // sector
   write_indent(out, 1);
   out << ")\n"; // sectors
   out << ")\n"; // supertux-level
@@ -203,8 +218,9 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
 {
   LoadedLevel level;
   level.name = name;
-  level.sector_name = sector_name;
   level.version = version;
+
+  // Start from meta sectors so inactive sectors are preserved
   if (meta) {
     if (level.name == "unnamed" && !meta->name.empty()) {
       level.name = meta->name;
@@ -217,17 +233,26 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
     level.contact = meta->contact;
     level.tileset_path = meta->tileset_path;
     level.target_time = meta->target_time;
-    level.gravity = meta->gravity;
-    level.has_gravity = meta->has_gravity;
-    level.ambient_r = meta->ambient_r;
-    level.ambient_g = meta->ambient_g;
-    level.ambient_b = meta->ambient_b;
-    level.ambient_a = meta->ambient_a;
-    level.has_ambient_light = meta->has_ambient_light;
-    if (level.sector_name == "main" && !meta->sector_name.empty()) {
-      level.sector_name = meta->sector_name;
-    }
+    level.sectors = meta->sectors;
+    level.active_sector = meta->active_sector;
   }
+
+  if (level.sectors.empty()) {
+    LoadedSector s;
+    s.name = sector_name.empty() ? "main" : sector_name;
+    level.sectors.push_back(std::move(s));
+    level.active_sector = 0;
+  } else if (!sector_name.empty()) {
+    level.select_sector(sector_name);
+  }
+
+  LoadedSector& sector = level.sectors[level.active_sector];
+  if (!sector_name.empty()) {
+    sector.name = sector_name;
+  }
+
+  sector.tilemaps.clear();
+  sector.objects.clear();
 
   int z = 0;
   for (const auto& layer : map.layers()) {
@@ -244,7 +269,7 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
           lt.tiles[static_cast<size_t>(y * lt.width + x)] = tm->field().at(x, y);
         }
       }
-      level.tilemaps.push_back(std::move(lt));
+      sector.tilemaps.push_back(std::move(lt));
       continue;
     }
     if (auto* ol = dynamic_cast<ObjectLayer*>(layer.get())) {
@@ -263,7 +288,7 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
           lo.height = rect->get_size().height;
         }
         lo.props = obj->properties();
-        level.objects.push_back(std::move(lo));
+        sector.objects.push_back(std::move(lo));
       }
     }
   }

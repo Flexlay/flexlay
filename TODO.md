@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-33.1-sprite-def-loader-5ef0589.bundle`
+**Current tip bundle:** `flexlay-34.1-multi-sector-5ef0589.bundle`
 
 ---
 
@@ -480,12 +480,20 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - `try_load_sprite` accepts `.sprite` paths (editor uses first frame PNG)
 - snowball / mr_tree visual table entries point at `.sprite` files
 
+### 2026-10-19 — Multi-sector support
+
+- **LoadedSector** + `LoadedLevel::sectors` (all sectors parsed)
+- Active sector via `active_sector` / `select_sector(name)`
+- Convenience views: `tilemaps()`, `objects()`, `gravity()`, …
+- Saver writes all sectors; `level_from_editor_map` updates only active, keeps others
+- simpleed: **Sector** combo in Objects dock; switch rebuilds map (saves prior sector)
+
 ### Concrete next steps
 
-1. ~~Load `.sprite` definition files (first-frame editor use)~~  
-2. Sector name list / multi-sector support  
-3. Animate sprite actions in editor (optional)  
-4. Hitbox-aware placement guides from sprite defs  
+1. ~~Sector name list / multi-sector support~~  
+2. Animate sprite actions in editor (optional)  
+3. Hitbox-aware placement guides from sprite defs  
+4. Add/remove/rename sectors in UI  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

@@ -191,7 +191,7 @@ LoadedObject parse_object(const SExpr& node)
   return obj;
 }
 
-void parse_ambient_light(const SExpr& node, LoadedLevel& level)
+void parse_ambient_light(const SExpr& node, LoadedSector& sector)
 {
   // (ambient-light 1 1 1 1) or (ambient-light (color 1 1 1 1))
   const SExpr* color = find_child(node, "color");
@@ -210,15 +210,15 @@ void parse_ambient_light(const SExpr& node, LoadedLevel& level)
     }
   }
   if (comps.size() >= 3) {
-    level.ambient_r = comps[0];
-    level.ambient_g = comps[1];
-    level.ambient_b = comps[2];
-    level.ambient_a = comps.size() >= 4 ? comps[3] : 1.0f;
-    level.has_ambient_light = true;
+    sector.ambient_r = comps[0];
+    sector.ambient_g = comps[1];
+    sector.ambient_b = comps[2];
+    sector.ambient_a = comps.size() >= 4 ? comps[3] : 1.0f;
+    sector.has_ambient_light = true;
   }
 }
 
-void collect_objects(const SExpr& objects_node, LoadedLevel& level)
+void collect_objects(const SExpr& objects_node, LoadedSector& sector)
 {
   if (!objects_node.is_list()) {
     return;
@@ -230,27 +230,27 @@ void collect_objects(const SExpr& objects_node, LoadedLevel& level)
     }
     const std::string tag = obj.tag();
     if (tag == "tilemap") {
-      level.tilemaps.push_back(parse_tilemap(obj));
+      sector.tilemaps.push_back(parse_tilemap(obj));
       continue;
     }
     if (tag == "gravity") {
       if (obj.as_list().size() >= 2 && obj.as_list()[1].is_atom()) {
         try {
-          level.gravity = std::stof(obj.as_list()[1].as_atom());
-          level.has_gravity = true;
+          sector.gravity = std::stof(obj.as_list()[1].as_atom());
+          sector.has_gravity = true;
         } catch (...) {
         }
       }
       continue;
     }
     if (tag == "ambient-light") {
-      parse_ambient_light(obj, level);
+      parse_ambient_light(obj, sector);
       continue;
     }
     if (is_skipped_object_tag(tag) || tag.empty()) {
       continue;
     }
-    level.objects.push_back(parse_object(obj));
+    sector.objects.push_back(parse_object(obj));
   }
 }
 
@@ -277,24 +277,27 @@ LoadedLevel load_level_text(const std::string& text)
   if (!sectors) {
     return level;
   }
-  // first sector
   for (size_t i = 1; i < sectors->as_list().size(); ++i) {
-    const auto& sector = sectors->as_list()[i];
-    if (!sector.is_list() || sector.tag() != "sector") {
+    const auto& sector_node = sectors->as_list()[i];
+    if (!sector_node.is_list() || sector_node.tag() != "sector") {
       continue;
     }
-    level.sector_name = child_atom(sector, "name", "main");
-    const SExpr* objects = find_child(sector, "objects");
-    if (objects) {
-      collect_objects(*objects, level);
+    LoadedSector sector;
+    sector.name = child_atom(sector_node, "name", "main");
+    if (sector.name.empty()) {
+      sector.name = "main";
     }
-    break;
+    const SExpr* objects = find_child(sector_node, "objects");
+    if (objects) {
+      collect_objects(*objects, sector);
+    }
+    std::stable_sort(sector.tilemaps.begin(), sector.tilemaps.end(),
+                     [](const LoadedTilemap& a, const LoadedTilemap& b) {
+                       return a.z_pos < b.z_pos;
+                     });
+    level.sectors.push_back(std::move(sector));
   }
-
-  std::stable_sort(level.tilemaps.begin(), level.tilemaps.end(),
-                   [](const LoadedTilemap& a, const LoadedTilemap& b) {
-                     return a.z_pos < b.z_pos;
-                   });
+  level.active_sector = 0;
   return level;
 }
 
@@ -315,10 +318,16 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
 {
   auto map = std::make_shared<EditorMap>();
   const int ts = tileset ? tileset->get_tile_size() : 32;
+  const LoadedSector* sector = level.active();
+  if (!sector) {
+    map->set_bounding_rect(Rectf(0, 0, static_cast<float>(ts), static_cast<float>(ts)));
+    map->set_background_color(Color(45, 45, 55));
+    return map;
+  }
 
   int max_w = 0;
   int max_h = 0;
-  for (const auto& tm : level.tilemaps) {
+  for (const auto& tm : sector->tilemaps) {
     max_w = std::max(max_w, tm.width);
     max_h = std::max(max_h, tm.height);
     if (!tileset || tm.width <= 0 || tm.height <= 0) {
@@ -346,7 +355,7 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
 
   auto object_layer = std::make_shared<ObjectLayer>();
   object_layer->set_name("objects");
-  for (const auto& lo : level.objects) {
+  for (const auto& lo : sector->objects) {
     auto obj = make_editor_object(lo.type, Pointf(lo.x, lo.y), lo.width, lo.height,
                                   lo.props, datadir);
     object_layer->add_object(obj);

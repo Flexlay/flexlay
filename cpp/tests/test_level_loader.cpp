@@ -52,14 +52,14 @@ int main()
   )");
   CHECK(level.version == 4);
   CHECK(level.name == "Test Level");
-  CHECK(level.tilemaps.size() == 1);
-  CHECK(level.tilemaps[0].tiles[0] == 1);
-  CHECK(level.objects.size() == 2);
-  CHECK(level.objects[0].type == "spawnpoint");
-  CHECK(level.objects[0].x == 96);
-  CHECK(level.objects[0].props.get_as<std::string>("name").value_or("") == "main");
-  CHECK(level.objects[1].type == "bonusblock");
-  CHECK(level.objects[1].props.get_as<int>("data").value_or(0) == 1);
+  CHECK(level.tilemaps().size() == 1);
+  CHECK(level.tilemaps()[0].tiles[0] == 1);
+  CHECK(level.objects().size() == 2);
+  CHECK(level.objects()[0].type == "spawnpoint");
+  CHECK(level.objects()[0].x == 96);
+  CHECK(level.objects()[0].props.get_as<std::string>("name").value_or("") == "main");
+  CHECK(level.objects()[1].type == "bonusblock");
+  CHECK(level.objects()[1].props.get_as<int>("data").value_or(0) == 1);
 
   auto tileset = std::make_shared<Tileset>(32);
   tileset->add_tile(1, Tile(Color(255, 0, 0)));
