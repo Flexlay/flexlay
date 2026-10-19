@@ -1,5 +1,5 @@
 {
-  description = "SuperTux 0.4.0 level editor";
+  description = "SuperTux level editor (C++/Qt6 default; Python path retained)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
@@ -25,8 +25,9 @@
             build-system = [ pythonPackages.setuptools ];
           };
 
-          flexlay = pythonPackages.buildPythonPackage rec {
-            pname = "flexlay";
+          # Python/PyQt5 editor (legacy path — kept for transition)
+          flexlay-python = pythonPackages.buildPythonPackage rec {
+            pname = "flexlay-python";
             version = "0.2.0";
             src = ./.;
             pyproject = true;
@@ -78,9 +79,13 @@
 
           # Prefer overridePythonAttrs: .override is not always present on
           # buildPythonPackage results (nixpkgs changes / pure drv path).
-          flexlay-nocheck = flexlay.overridePythonAttrs (_old: {
+          flexlay-python-nocheck = flexlay-python.overridePythonAttrs (_old: {
             doCheck = false;
           });
+
+          # Back-compat alias for scripts that still expect packages.flexlay
+          # to be the Python package. Prefer packages.default / flexlay-cpp.
+          flexlay = flexlay-python;
 
           /**
            * C++ / Qt6 port of the editor core + simpleed demo.
@@ -138,34 +143,57 @@
             installPhase = ''
               runHook preInstall
               cmake --install build
+              # Primary SuperTux editor name (same binary as flexlay-simpleed)
+              ln -s flexlay-simpleed "$out/bin/supertux-editor"
               runHook postInstall
             '';
 
             meta = with pkgs.lib; {
-              description = "Flexlay C++/Qt6 editor core and simpleed";
+              description = "Flexlay C++/Qt6 SuperTux level editor";
               license = licenses.gpl3Plus;
               platforms = platforms.linux;
-              mainProgram = "flexlay-simpleed";
+              mainProgram = "supertux-editor";
             };
           };
 
-          # Alias for `nix run .#flexlay-simpleed`
+          # Aliases
           flexlay-simpleed = flexlay-cpp;
-
-          default = flexlay;
+          # C++ is the default package path
+          default = flexlay-cpp;
         };
 
-        apps = {
+        apps = rec {
+          /**
+           * Default: C++ SuperTux editor (`supertux-editor` / `flexlay-simpleed`).
+           *   nix run
+           *   nix run .#supertux-editor
+           */
+          default = {
+            type = "app";
+            program = "${packages.flexlay-cpp}/bin/supertux-editor";
+          };
+
+          supertux-editor = default;
+
           flexlay-simpleed = {
             type = "app";
             program = "${packages.flexlay-cpp}/bin/flexlay-simpleed";
+          };
+
+          /**
+           * Legacy Python/PyQt5 SuperTux editor.
+           *   nix run .#supertux-editor-python
+           */
+          supertux-editor-python = {
+            type = "app";
+            program = "${packages.flexlay-python}/bin/supertux-editor";
           };
         };
 
         devShells = rec {
           flexlay-dev = pkgs.mkShell {
-            inputsFrom = [ packages.flexlay ];
-            shellHook = packages.flexlay.preCheck + ''
+            inputsFrom = [ packages.flexlay-python ];
+            shellHook = packages.flexlay-python.preCheck + ''
               # runHook setuptoolsShellHook
             '';
           };
@@ -190,7 +218,8 @@
             '';
           };
 
-          default = flexlay-dev;
+          # C++ port is the default development environment
+          default = flexlay-cpp-dev;
         };
       }
     );

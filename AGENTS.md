@@ -18,6 +18,16 @@ minimal and ideally scriptable or pluggable.
 GNU GPL v3+ (see `COPYING`). Keep SPDX-style headers / copyright notices
 when adding C++ sources.
 
+
+
+## Nix flake (2026-10)
+
+- **Default package/app is the C++ editor:** `nix run` / `nix run .#supertux-editor`
+- Binary: `supertux-editor` (symlink to `flexlay-simpleed`)
+- Python path still available: `nix run .#supertux-editor-python` / `packages.flexlay-python`
+- Dev shell default: `nix develop` → `flexlay-cpp-dev`
+- Data: `SUPERTUX_DATADIR=/path/to/supertux/data nix run`
+
 ## Standing rules for agents
 
 - Read this file and `TODO.md` at session start.

@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-34.1-multi-sector-5ef0589.bundle`
+**Current tip bundle:** `flexlay-35.1-flake-cpp-default-5ef0589.bundle`
 
 ---
 
@@ -487,6 +487,22 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - Convenience views: `tilemaps()`, `objects()`, `gravity()`, …
 - Saver writes all sectors; `level_from_editor_map` updates only active, keeps others
 - simpleed: **Sector** combo in Objects dock; switch rebuilds map (saves prior sector)
+
+### 2026-10-19 — Flake: C++ SuperTux editor is default
+
+- `packages.default` / `packages.flexlay-cpp` — C++ editor
+- `apps.default` / `apps.supertux-editor` → `$out/bin/supertux-editor` (symlink to flexlay-simpleed)
+- `apps.flexlay-simpleed` — same binary under old name
+- `apps.supertux-editor-python` / `packages.flexlay-python` — legacy Python path
+- `devShells.default` = `flexlay-cpp-dev`
+- Python package kept as `flexlay-python` (and `packages.flexlay` alias for back-compat)
+
+```bash
+nix run                         # C++ SuperTux editor
+nix run .#supertux-editor       # same
+nix run .#supertux-editor-python
+SUPERTUX_DATADIR=/path/to/data nix run
+```
 
 ### Concrete next steps
 
