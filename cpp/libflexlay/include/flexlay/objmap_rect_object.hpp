@@ -11,9 +11,21 @@
 
 namespace flexlay {
 
+enum class ResizeHandle
+{
+  none = 0,
+  top_left,
+  top_right,
+  bottom_left,
+  bottom_right,
+};
+
 class ObjMapRectObject : public ObjMapObject
 {
 public:
+  static constexpr float handle_size = 8.0f;
+  static constexpr float min_size = 8.0f;
+
   ObjMapRectObject() = default;
   ObjMapRectObject(const Pointf& pos, const Sizef& size, const Color& color);
 
@@ -21,10 +33,21 @@ public:
   Rectf get_bound_rect() const override;
 
   Sizef get_size() const { return m_size; }
-  void set_size(const Sizef& size) { m_size = size; }
+  void set_size(const Sizef& size);
 
   Color get_color() const { return m_color; }
   void set_color(const Color& c) { m_color = c; }
+
+  /** Which resize handle contains world_pos (only meaningful when selected). */
+  ResizeHandle hit_handle(const Pointf& world_pos) const;
+
+  Rectf handle_rect(ResizeHandle handle) const;
+
+  /**
+   * Apply drag of a handle to world_pos; updates pos/size in place.
+   * Returns normalized result (positive size).
+   */
+  void resize_to_handle(ResizeHandle handle, const Pointf& world_pos);
 
 private:
   Sizef m_size{32, 32};

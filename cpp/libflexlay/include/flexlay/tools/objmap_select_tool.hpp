@@ -7,6 +7,7 @@
 
 #include "flexlay/commands/object_move_command.hpp"
 #include "flexlay/object_layer.hpp"
+#include "flexlay/objmap_rect_object.hpp"
 #include "flexlay/tools/tool.hpp"
 #include "flexlay/workspace.hpp"
 
@@ -25,14 +26,20 @@ public:
   void on_mouse_move(Workspace& workspace, const Pointf& world_pos, int buttons) override;
   void on_mouse_up(Workspace& workspace, const Pointf& world_pos, int button) override;
 
-  /** Delete currently selected objects (undoable). Returns true if anything deleted. */
   bool delete_selection(Workspace& workspace);
 
 private:
+  enum class Mode { idle, moving, resizing };
+
   std::shared_ptr<ObjectLayer> m_layer;
-  bool m_dragging = false;
+  Mode m_mode = Mode::idle;
   Pointf m_drag_start;
   std::shared_ptr<ObjectMoveCommand> m_move_cmd;
+
+  std::shared_ptr<ObjMapRectObject> m_resize_obj;
+  ResizeHandle m_resize_handle = ResizeHandle::none;
+  Pointf m_resize_old_pos;
+  Sizef m_resize_old_size;
 };
 
 } // namespace flexlay

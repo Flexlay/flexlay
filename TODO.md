@@ -313,11 +313,18 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - simpleed: **Add rect** button
 - **flake.nix**: `flexlay-nocheck` uses `overridePythonAttrs` (fixes missing `.override`)
 
+### 2026-10-19 — Rect resize
+
+- **ResizeHandle** on selected **ObjMapRectObject** (4 corners)
+- **ObjectTransformCommand** (pos+size undo)
+- **ObjMapSelectTool** prefers handle hit → resize drag
+- Min size 8×8; handles drawn in yellow
+
 ### Concrete next steps
 
-1. ~~Scaffold through object CRUD~~  
-2. Resize handles for rects  
-3. Multi-tile brushes  
+1. ~~Scaffold through object CRUD + resize~~  
+2. Multi-tile brushes / tile selector UI  
+3. Sprite objects / pixel buffer load  
 4. SuperTux + Python embed after simpleed is useful
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "flexlay/commands/object_add_command.hpp"
+#include "flexlay/commands/object_transform_command.hpp"
 #include "flexlay/commands/object_delete_command.hpp"
 #include "flexlay/commands/object_move_command.hpp"
 #include "flexlay/editor_map.hpp"
@@ -58,6 +59,24 @@ int main()
   CHECK(layer->objects().size() == 2);
   map->undo();
   CHECK(layer->objects().size() == 1);
+
+  // Resize handle + transform undo (pos is 15,27 size 40x30 after earlier redo)
+  rect->set_selected(true);
+  const Pointf tl = rect->get_pos();
+  CHECK(rect->hit_handle(tl) == ResizeHandle::top_left);
+  const Pointf br(tl.x + 70, tl.y + 70);
+  rect->resize_to_handle(ResizeHandle::bottom_right, br);
+  CHECK(rect->get_size().width == 70);
+  CHECK(rect->get_size().height == 70);
+
+  const Pointf saved_pos = rect->get_pos();
+  const Sizef saved_size = rect->get_size();
+  auto xform = std::make_shared<ObjectTransformCommand>(
+    rect, Pointf(15, 27), Sizef(40, 30), saved_pos, saved_size);
+  map->execute(xform);
+  map->undo();
+  CHECK(rect->get_size() == Sizef(40, 30));
+  CHECK(rect->get_pos() == Pointf(15, 27));
 
   std::cout << "test_objects: ok\n";
   return 0;
