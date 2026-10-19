@@ -193,6 +193,45 @@ void EditorMapWidget::keyPressEvent(QKeyEvent* event)
     }
   }
 
+  // Raise / lower selection (Python button-panel parity)
+  if (auto select = std::dynamic_pointer_cast<ObjMapSelectTool>(m_workspace->tool())) {
+    if (auto layer = select->object_layer()) {
+      const auto sel = layer->selected_objects();
+      if (!sel.empty()) {
+        bool changed = false;
+        if (event->key() == Qt::Key_PageUp || event->key() == Qt::Key_BracketRight) {
+          for (const auto& obj : sel) {
+            if (event->modifiers() & Qt::ControlModifier) {
+              layer->raise_object_to_top(obj);
+            } else {
+              layer->raise_object(obj);
+            }
+          }
+          changed = true;
+        } else if (event->key() == Qt::Key_PageDown || event->key() == Qt::Key_BracketLeft) {
+          for (const auto& obj : sel) {
+            if (event->modifiers() & Qt::ControlModifier) {
+              layer->lower_object_to_bottom(obj);
+            } else {
+              layer->lower_object(obj);
+            }
+          }
+          changed = true;
+        }
+        if (changed) {
+          if (auto* map = m_workspace->map()) {
+            map->set_modified(true);
+            map->bump_serial();
+          }
+          update();
+          emit map_changed();
+          event->accept();
+          return;
+        }
+      }
+    }
+  }
+
   QWidget::keyPressEvent(event);
 }
 

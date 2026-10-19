@@ -31,6 +31,12 @@ public:
   void clear_selection();
   std::vector<std::shared_ptr<ObjMapObject>> selected_objects() const;
 
+  /** Z-order: later entries are drawn on top. */
+  void raise_object(const std::shared_ptr<ObjMapObject>& obj);
+  void lower_object(const std::shared_ptr<ObjMapObject>& obj);
+  void raise_object_to_top(const std::shared_ptr<ObjMapObject>& obj);
+  void lower_object_to_bottom(const std::shared_ptr<ObjMapObject>& obj);
+
 private:
   std::vector<std::shared_ptr<ObjMapObject>> m_objects;
 };

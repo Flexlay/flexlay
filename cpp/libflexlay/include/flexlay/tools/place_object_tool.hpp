@@ -27,6 +27,9 @@ public:
   void set_prototype(ObjectPrototype proto);
   void clear_prototype();
   void set_datadir(std::string datadir);
+  void set_snap(bool on) { m_snap = on; }
+  bool snap() const { return m_snap; }
+  void set_snap_size(float s) { m_snap_size = s; }
 
   std::function<void(std::shared_ptr<ObjMapObject>)> on_placed;
   std::function<void()> on_cancelled;
@@ -38,12 +41,15 @@ public:
 
 private:
   void reload_preview();
+  Pointf snap_pos(const Pointf& p) const;
 
   std::shared_ptr<ObjectLayer> m_layer;
   std::optional<ObjectPrototype> m_proto;
   std::string m_datadir;
   Pointf m_cursor;
   bool m_have_cursor = false;
+  bool m_snap = true;
+  float m_snap_size = 32.0f;
 
   std::optional<Sprite> m_preview_sprite;
   std::optional<Rectf> m_preview_hitbox; // sprite-local

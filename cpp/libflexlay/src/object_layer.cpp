@@ -67,4 +67,50 @@ std::vector<std::shared_ptr<ObjMapObject>> ObjectLayer::selected_objects() const
   return result;
 }
 
+
+
+void ObjectLayer::raise_object(const std::shared_ptr<ObjMapObject>& obj)
+{
+  auto it = std::find(m_objects.begin(), m_objects.end(), obj);
+  if (it == m_objects.end()) {
+    return;
+  }
+  auto next = std::next(it);
+  if (next == m_objects.end()) {
+    return;
+  }
+  std::iter_swap(it, next);
+}
+
+void ObjectLayer::lower_object(const std::shared_ptr<ObjMapObject>& obj)
+{
+  auto it = std::find(m_objects.begin(), m_objects.end(), obj);
+  if (it == m_objects.begin() || it == m_objects.end()) {
+    return;
+  }
+  std::iter_swap(it, std::prev(it));
+}
+
+void ObjectLayer::raise_object_to_top(const std::shared_ptr<ObjMapObject>& obj)
+{
+  auto it = std::find(m_objects.begin(), m_objects.end(), obj);
+  if (it == m_objects.end()) {
+    return;
+  }
+  auto ptr = *it;
+  m_objects.erase(it);
+  m_objects.push_back(std::move(ptr));
+}
+
+void ObjectLayer::lower_object_to_bottom(const std::shared_ptr<ObjMapObject>& obj)
+{
+  auto it = std::find(m_objects.begin(), m_objects.end(), obj);
+  if (it == m_objects.end()) {
+    return;
+  }
+  auto ptr = *it;
+  m_objects.erase(it);
+  m_objects.insert(m_objects.begin(), std::move(ptr));
+}
+
 } // namespace flexlay

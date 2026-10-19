@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-42.1-hitbox-placement-5ef0589.bundle`
+**Current tip bundle:** `flexlay-43.1-zorder-snap-5ef0589.bundle`
 
 ---
 
@@ -566,6 +566,13 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - Parse `(hitbox x y w h)` from SuperTux `.sprite` actions
 - Accept top-level `(action …)` (mainline) as well as nested `(actions …)`
 - Place tool: ghost sprite + cyan hitbox overlay at cursor when datadir set
+
+### 2026-10-19 — Object z-order + placement snap
+
+- ObjectLayer: raise / lower / to top / to bottom
+- Keys: PageUp/PageDown (Ctrl = extreme), `]` / `[`
+- Edit menu: Raise/Lower/Top/Bottom
+- Place tool: snap to 32px grid (toolbar **Snap** toggle, on by default)
 
 ### Concrete next steps
 

@@ -347,6 +347,10 @@ int main(int argc, char* argv[])
 
   toolbar->addSeparator();
   auto* grid_act = toolbar->addAction(QStringLiteral("Grid"));
+  auto* snap_act = toolbar->addAction(QStringLiteral("Snap"));
+  snap_act->setCheckable(true);
+  snap_act->setChecked(true);
+  snap_act->setToolTip(QStringLiteral("Snap object placement to tile grid"));
   grid_act->setCheckable(true);
   grid_act->setChecked(true);
   grid_act->setShortcut(QKeySequence(QStringLiteral("G")));
@@ -391,6 +395,10 @@ int main(int argc, char* argv[])
       map_widget->update();
     }
   });
+  QObject::connect(snap_act, &QAction::toggled, [place_tool](bool on) {
+    place_tool->set_snap(on);
+  });
+  place_tool->set_snap(true);
   auto apply_zoom = [workspace, map_widget](float z) {
     workspace->state().set_zoom(z);
     map_widget->update();
@@ -916,6 +924,37 @@ int main(int argc, char* argv[])
   });
   QObject::connect(redo_act, &QAction::triggered, [workspace, map_widget]() {
     if (auto* map = workspace->map()) { map->redo(); map_widget->update(); }
+  });
+
+  auto* raise_act = edit_menu->addAction(QStringLiteral("Raise Object"));
+  raise_act->setShortcut(QKeySequence(QStringLiteral("PgUp")));
+  auto* lower_act = edit_menu->addAction(QStringLiteral("Lower Object"));
+  lower_act->setShortcut(QKeySequence(QStringLiteral("PgDown")));
+  auto* raise_top_act = edit_menu->addAction(QStringLiteral("Object to Top"));
+  auto* lower_bot_act = edit_menu->addAction(QStringLiteral("Object to Bottom"));
+  auto do_z = [workspace, map_widget, select_tool](auto fn) {
+    if (auto layer = select_tool->object_layer()) {
+      for (const auto& obj : layer->selected_objects()) {
+        fn(layer, obj);
+      }
+      if (auto* map = workspace->map()) {
+        map->set_modified(true);
+        map->bump_serial();
+      }
+      map_widget->update();
+    }
+  };
+  QObject::connect(raise_act, &QAction::triggered, [do_z]() {
+    do_z([](auto layer, auto obj) { layer->raise_object(obj); });
+  });
+  QObject::connect(lower_act, &QAction::triggered, [do_z]() {
+    do_z([](auto layer, auto obj) { layer->lower_object(obj); });
+  });
+  QObject::connect(raise_top_act, &QAction::triggered, [do_z]() {
+    do_z([](auto layer, auto obj) { layer->raise_object_to_top(obj); });
+  });
+  QObject::connect(lower_bot_act, &QAction::triggered, [do_z]() {
+    do_z([](auto layer, auto obj) { layer->lower_object_to_bottom(obj); });
   });
 
   edit_menu->addSeparator();

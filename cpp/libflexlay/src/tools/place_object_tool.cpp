@@ -10,6 +10,7 @@
 #include "flexlay/supertux/object_sprites.hpp"
 #include "flexlay/supertux/sprite_loader.hpp"
 
+#include <cmath>
 #include <filesystem>
 
 namespace flexlay {
@@ -97,9 +98,19 @@ void PlaceObjectTool::reload_preview()
   }
 }
 
+
+Pointf PlaceObjectTool::snap_pos(const Pointf& p) const
+{
+  if (!m_snap || m_snap_size <= 0.0f) {
+    return p;
+  }
+  return Pointf(std::floor(p.x / m_snap_size + 0.5f) * m_snap_size,
+                std::floor(p.y / m_snap_size + 0.5f) * m_snap_size);
+}
+
 void PlaceObjectTool::on_mouse_down(Workspace& workspace, const Pointf& world_pos, int button)
 {
-  m_cursor = world_pos;
+  m_cursor = snap_pos(world_pos);
   m_have_cursor = true;
 
   if (button == 2) {
@@ -112,7 +123,7 @@ void PlaceObjectTool::on_mouse_down(Workspace& workspace, const Pointf& world_po
     return;
   }
 
-  auto obj = m_proto->instantiate(world_pos, m_datadir);
+  auto obj = m_proto->instantiate(snap_pos(world_pos), m_datadir);
   m_layer->clear_selection();
   auto cmd = std::make_shared<ObjectAddCommand>(m_layer);
   cmd->add_object(obj);
@@ -127,7 +138,7 @@ void PlaceObjectTool::on_mouse_down(Workspace& workspace, const Pointf& world_po
 
 void PlaceObjectTool::on_mouse_move(Workspace& /*workspace*/, const Pointf& world_pos, int /*buttons*/)
 {
-  m_cursor = world_pos;
+  m_cursor = snap_pos(world_pos);
   m_have_cursor = true;
 }
 
