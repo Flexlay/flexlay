@@ -383,12 +383,19 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - **test_level_loader** green
 - Documented in AGENTS.md
 
+### 2026-10-19 — .stts loader + Open Level
+
+- **supertux::load_tileset_*** parses `supertux-tileset` (tile, bulk ids, tilegroups)
+- Optional `datadir` + `load_images` for PixelBuffer::from_file
+- simpleed **File → Open Level…** loads `.stlv`/`.stl` tilemaps (placeholder colors by id)
+- **test_tileset_loader** green
+
 ### Concrete next steps
 
-1. ~~Minimal .stlv tilemap load~~  
-2. `.stts` tileset parse + image paths (datadir)  
-3. Wire Open Level into simpleed / Qt file dialog  
-4. Game objects as property bags (ECS-like)
+1. ~~stlv + stts parse + Open Level~~  
+2. Load real tileset images from SuperTux-Origins datadir  
+3. Sheet region crop for bulk (tiles ids + image)  
+4. Game objects as property bags
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

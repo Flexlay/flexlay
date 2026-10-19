@@ -16,9 +16,16 @@
 #include "flexlay/tools/objmap_select_tool.hpp"
 #include "flexlay/tools/tile_fill_tool.hpp"
 #include "flexlay/tools/tile_paint_tool.hpp"
+#include "flexlay/supertux/level_loader.hpp"
+#include "flexlay/supertux/tileset_loader.hpp"
 #include "flexlay/workspace.hpp"
 
+
 #include <QApplication>
+#include <QFileDialog>
+#include <QMenuBar>
+#include <QMessageBox>
+
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMainWindow>
@@ -209,6 +216,62 @@ int main(int argc, char* argv[])
   };
   QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, update_status);
   update_status();
+
+
+  auto* file_menu = window.menuBar()->addMenu(QStringLiteral("&File"));
+  auto* open_act = file_menu->addAction(QStringLiteral("Open Level…"));
+  QObject::connect(open_act, &QAction::triggered, [&]() {
+    const QString path = QFileDialog::getOpenFileName(
+      &window, QStringLiteral("Open SuperTux Level"),
+      QString(), QStringLiteral("SuperTux levels (*.stlv *.stl);;All (*)"));
+    if (path.isEmpty()) {
+      return;
+    }
+    try {
+      auto level = flexlay::supertux::load_level_file(path.toStdString());
+      // Build a placeholder tileset covering ids seen in the level
+      auto ts = std::make_shared<flexlay::Tileset>(tile_size);
+      for (const auto& tm : level.tilemaps) {
+        for (uint32_t id : tm.tiles) {
+          if (id != 0 && !ts->has_tile(static_cast<int>(id))) {
+            const uint8_t r = static_cast<uint8_t>(40 + (id * 37) % 180);
+            const uint8_t g = static_cast<uint8_t>(40 + (id * 73) % 180);
+            const uint8_t b = static_cast<uint8_t>(40 + (id * 19) % 180);
+            ts->add_tile(static_cast<int>(id), flexlay::Tile(flexlay::Color(r, g, b)));
+          }
+        }
+      }
+      auto new_map = flexlay::supertux::editor_map_from_level(level, ts);
+      workspace->set_map(new_map);
+      // Rebind tools to first tilemap layer if present
+      flexlay::TilemapLayer* first_tm = nullptr;
+      for (const auto& layer : new_map->layers()) {
+        if (auto* tml = dynamic_cast<flexlay::TilemapLayer*>(layer.get())) {
+          first_tm = tml;
+          break;
+        }
+      }
+      if (first_tm) {
+        // tools need shared_ptr — find shared from layers
+        for (const auto& layer : new_map->layers()) {
+          auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer);
+          if (tml) {
+            paint_tool->set_tilemap(tml);
+            fill_tool->set_tilemap(tml);
+            break;
+          }
+        }
+      }
+      map_widget->update();
+      window.statusBar()->showMessage(
+        QStringLiteral("Loaded %1 (%2 tilemaps)")
+          .arg(QString::fromStdString(level.name))
+          .arg(level.tilemaps.size()));
+    } catch (const std::exception& ex) {
+      QMessageBox::warning(&window, QStringLiteral("Open Level"),
+                           QString::fromUtf8(ex.what()));
+    }
+  });
 
   window.resize(1100, 640);
   window.show();

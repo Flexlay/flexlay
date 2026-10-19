@@ -29,3 +29,7 @@ add_test(NAME test_sprite COMMAND test_sprite)
 add_executable(test_level_loader test_level_loader.cpp)
 target_link_libraries(test_level_loader PRIVATE flexlay::flexlay)
 add_test(NAME test_level_loader COMMAND test_level_loader)
+
+add_executable(test_tileset_loader test_tileset_loader.cpp)
+target_link_libraries(test_tileset_loader PRIVATE flexlay::flexlay)
+add_test(NAME test_tileset_loader COMMAND test_tileset_loader)
