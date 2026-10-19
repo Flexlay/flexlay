@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-25.1-layers-property-bag-5ef0589.bundle`
+**Current tip bundle:** `flexlay-26.1-properties-object-palette-5ef0589.bundle`
 
 ---
 
@@ -418,15 +418,22 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - **PropertyBag** / **PropertyValue** (bool/int/float/string/Color/Pointf)
   on every **ObjMapObject**; **test_property_bag** green
 
+### 2026-10-19 — Properties editor + object palette
+
+- **PropertiesWidget**: edits name, x/y, and typed PropertyBag fields
+- **ObjMapSelectTool::on_selection_changed** callback → refresh properties
+- **ObjectPrototype** registry (rect, spawnpoint, bonusblock, candle, ghosttree)
+- **ObjectSelectorWidget**: double-click or “Add at view center” places instance
+- simpleed: Properties + Objects docks (tabbed with Tiles)
+
 ### Concrete next steps
 
-1. ~~stlv + stts parse + Open Level~~  
-2. ~~Load real tileset images from SuperTux-Origins datadir~~  
-3. ~~Sheet region crop for bulk (tiles ids + image)~~  
-4. ~~Tile selector UI (tilegroups from meta)~~  
-5. ~~Layer list / switch active tilemap~~  
-6. Property editor UI for selected object  
-7. Object selector palette (data-driven types, not full gameobjs.py)  
+1. ~~… through layers/property bag…~~  
+2. ~~Property editor UI for selected object~~  
+3. ~~Object selector palette (data-driven types)~~  
+4. Load/save game objects from SuperTux levels (minimal subset)  
+5. Place-object click tool (instead of view-center only)  
+6. Expand prototype table toward common SuperTux types  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

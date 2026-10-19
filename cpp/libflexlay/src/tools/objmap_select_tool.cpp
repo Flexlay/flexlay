@@ -55,6 +55,9 @@ void ObjMapSelectTool::on_mouse_down(Workspace& workspace, const Pointf& world_p
     m_mode = Mode::idle;
   }
 
+  if (on_selection_changed) {
+    on_selection_changed();
+  }
   if (auto* map = workspace.map()) {
     map->bump_serial();
   }
@@ -117,6 +120,9 @@ bool ObjMapSelectTool::delete_selection(Workspace& workspace)
   }
   if (auto* map = workspace.map()) {
     map->execute(cmd);
+  }
+  if (on_selection_changed) {
+    on_selection_changed();
   }
   return true;
 }

@@ -46,6 +46,10 @@ if(FLEXLAY_BUILD_SIMPLEED)
     include/flexlay/gui/tile_selector_widget.hpp
     src/gui/layer_selector_widget.cpp
     include/flexlay/gui/layer_selector_widget.hpp
+    src/gui/properties_widget.cpp
+    include/flexlay/gui/properties_widget.hpp
+    src/gui/object_selector_widget.cpp
+    include/flexlay/gui/object_selector_widget.hpp
   )
   set_target_properties(flexlay PROPERTIES
     AUTOMOC ON

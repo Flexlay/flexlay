@@ -11,6 +11,7 @@
 #include "flexlay/tools/tool.hpp"
 #include "flexlay/workspace.hpp"
 
+#include <functional>
 #include <memory>
 
 namespace flexlay {
@@ -21,12 +22,16 @@ public:
   ObjMapSelectTool() = default;
 
   void set_object_layer(std::shared_ptr<ObjectLayer> layer) { m_layer = std::move(layer); }
+  std::shared_ptr<ObjectLayer> object_layer() const { return m_layer; }
 
   void on_mouse_down(Workspace& workspace, const Pointf& world_pos, int button) override;
   void on_mouse_move(Workspace& workspace, const Pointf& world_pos, int buttons) override;
   void on_mouse_up(Workspace& workspace, const Pointf& world_pos, int button) override;
 
   bool delete_selection(Workspace& workspace);
+
+  /** Optional callback after selection set changes (click / clear). */
+  std::function<void()> on_selection_changed;
 
 private:
   enum class Mode { idle, moving, resizing };

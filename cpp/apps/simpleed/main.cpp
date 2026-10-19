@@ -21,6 +21,9 @@
 #include "flexlay/workspace.hpp"
 #include "flexlay/gui/tile_selector_widget.hpp"
 #include "flexlay/gui/layer_selector_widget.hpp"
+#include "flexlay/object_prototype.hpp"
+#include "flexlay/gui/object_selector_widget.hpp"
+#include "flexlay/gui/properties_widget.hpp"
 #include "flexlay/tile_brush.hpp"
 
 
@@ -244,6 +247,81 @@ int main(int argc, char* argv[])
                      map_widget->update();
                    });
 
+
+  // Properties dock
+  auto* props_dock = new QDockWidget(QStringLiteral("Properties"), &window);
+  props_dock->setObjectName(QStringLiteral("properties_dock"));
+  auto* props_widget = new flexlay::PropertiesWidget(props_dock);
+  props_dock->setWidget(props_widget);
+  window.addDockWidget(Qt::RightDockWidgetArea, props_dock);
+
+  // Object palette dock
+  auto* obj_dock = new QDockWidget(QStringLiteral("Objects"), &window);
+  obj_dock->setObjectName(QStringLiteral("object_selector_dock"));
+  auto* obj_inner = new QWidget(obj_dock);
+  auto* obj_layout = new QVBoxLayout(obj_inner);
+  auto* obj_selector = new flexlay::ObjectSelectorWidget(obj_inner);
+  obj_selector->set_prototypes(flexlay::default_object_prototypes());
+  auto* add_obj_btn = new QPushButton(QStringLiteral("Add at view center"), obj_inner);
+  obj_layout->addWidget(obj_selector, 1);
+  obj_layout->addWidget(add_obj_btn);
+  obj_dock->setWidget(obj_inner);
+  window.addDockWidget(Qt::RightDockWidgetArea, obj_dock);
+  window.tabifyDockWidget(tile_dock, props_dock);
+  window.tabifyDockWidget(props_dock, obj_dock);
+  tile_dock->raise();
+
+  auto refresh_properties_from_selection = [props_widget, select_tool]() {
+    auto layer = select_tool->object_layer();
+    if (!layer) {
+      props_widget->clear();
+      return;
+    }
+    auto selected = layer->selected_objects();
+    if (selected.size() == 1) {
+      props_widget->set_object(selected.front());
+    } else {
+      props_widget->clear();
+    }
+  };
+  select_tool->on_selection_changed = [refresh_properties_from_selection, map_widget]() {
+    refresh_properties_from_selection();
+    map_widget->update();
+  };
+  QObject::connect(props_widget, &flexlay::PropertiesWidget::properties_changed,
+                   [map_widget]() { map_widget->update(); });
+
+  auto place_prototype = [workspace, object_layer, select_tool, editor_map, map_widget, props_widget](
+                           const flexlay::ObjectPrototype& proto) {
+    // place near view center
+    // view placement
+    // approximate: use map mid or fixed offset
+    flexlay::Pointf pos(128, 128);
+    if (auto* map = workspace->map()) {
+      if (map->has_bounding_rect()) {
+        const auto br = map->bounding_rect();
+        pos = flexlay::Pointf((br.left + br.right) * 0.5f, (br.top + br.bottom) * 0.5f);
+      }
+    }
+    auto obj = proto.instantiate(pos);
+    object_layer->clear_selection();
+    auto cmd = std::make_shared<flexlay::ObjectAddCommand>(object_layer);
+    cmd->add_object(obj);
+    editor_map->execute(cmd);
+    obj->set_selected(true);
+    props_widget->set_object(obj);
+    workspace->set_tool(select_tool);
+    map_widget->update();
+  };
+
+  QObject::connect(obj_selector, &flexlay::ObjectSelectorWidget::prototype_activated,
+                   place_prototype);
+  QObject::connect(add_obj_btn, &QPushButton::clicked, [obj_selector, place_prototype]() {
+    if (const auto* p = obj_selector->current_prototype()) {
+      place_prototype(*p);
+    }
+  });
+
   // Keep last loaded tilegroups for combo switching
   auto tilegroups = std::make_shared<std::vector<flexlay::supertux::TileGroupInfo>>();
   auto current_tileset = std::make_shared<std::shared_ptr<flexlay::Tileset>>(tileset);
@@ -300,8 +378,9 @@ int main(int argc, char* argv[])
     workspace->set_tool(fill_tool);
     map_widget->setFocus();
   });
-  QObject::connect(select_btn, &QPushButton::clicked, [workspace, select_tool, map_widget]() {
+  QObject::connect(select_btn, &QPushButton::clicked, [workspace, select_tool, map_widget, refresh_properties_from_selection]() {
     workspace->set_tool(select_tool);
+    refresh_properties_from_selection();
     map_widget->setFocus();
   });
 
@@ -399,6 +478,14 @@ int main(int argc, char* argv[])
       *current_tileset = ts;
       tile_selector->set_tileset(ts);
       layer_selector->set_map(new_map);
+      // Rebind object layer for tools/properties if present
+      for (const auto& layer : new_map->layers()) {
+        if (auto ol = std::dynamic_pointer_cast<flexlay::ObjectLayer>(layer)) {
+          select_tool->set_object_layer(ol);
+          break;
+        }
+      }
+      props_widget->clear();
       *tilegroups = meta.tilegroups;
       group_combo->blockSignals(true);
       group_combo->clear();
