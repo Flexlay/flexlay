@@ -170,7 +170,13 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
       continue;
     }
     auto layer = std::make_shared<TilemapLayer>(tileset, tm.width, tm.height);
-    layer->set_name(tm.name.empty() ? ("tilemap z=" + std::to_string(tm.z_pos)) : tm.name);
+    {
+      std::string nm = tm.name.empty() ? ("tilemap z=" + std::to_string(tm.z_pos)) : tm.name;
+      if (tm.solid) {
+        nm += " [solid]";
+      }
+      layer->set_name(nm);
+    }
     layer->set_draw_grid(true);
     for (int y = 0; y < tm.height; ++y) {
       for (int x = 0; x < tm.width; ++x) {

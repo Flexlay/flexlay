@@ -8,6 +8,7 @@
 #include "flexlay/graphic_context.hpp"
 #include "flexlay/math/point.hpp"
 #include "flexlay/math/rect.hpp"
+#include "flexlay/property_bag.hpp"
 
 #include <string>
 
@@ -34,11 +35,15 @@ public:
   const std::string& name() const { return m_name; }
   void set_name(const std::string& n) { m_name = n; }
 
+  PropertyBag& properties() { return m_properties; }
+  const PropertyBag& properties() const { return m_properties; }
+
 protected:
   Pointf m_pos;
   bool m_selected = false;
   bool m_to_draw = true;
   std::string m_name;
+  PropertyBag m_properties;
 };
 
 inline bool ObjMapObject::is_inside(const Pointf& pos) const

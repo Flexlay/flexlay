@@ -30,7 +30,9 @@ void EditorMap::draw(GraphicContext& gc) const
     gc.fill_rect(m_bounding_rect, m_background_color);
   }
   for (const auto& layer : m_layers) {
-    layer->draw(gc);
+    if (layer && !layer->is_hidden()) {
+      layer->draw(gc);
+    }
   }
   if (m_draw_grid && m_has_bounding_rect) {
     const Color grid(255, 255, 255, 30);

@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-024.1-tile-selector-5ef0589.bundle`
+**Current tip bundle:** `flexlay-25.1-layers-property-bag-5ef0589.bundle`
 
 ---
 
@@ -409,14 +409,24 @@ Reference tree: **SuperTux-Origins/supertux** (not upstream alone).
 - On Open Level with datadir: populate groups from `LoadedTilesetMeta.tilegroups`
 - Demo tiles shown until a level/tileset is loaded
 
+### 2026-10-19 — Layers dock + PropertyBag
+
+- **EditorMap::draw** skips hidden layers
+- **LayerSelectorWidget**: checkable visibility; select tilemap → rebind
+  paint/fill; select object layer → select tool
+- simpleed **Layers** dock (left); solid tilemaps labeled `[solid]`
+- **PropertyBag** / **PropertyValue** (bool/int/float/string/Color/Pointf)
+  on every **ObjMapObject**; **test_property_bag** green
+
 ### Concrete next steps
 
 1. ~~stlv + stts parse + Open Level~~  
 2. ~~Load real tileset images from SuperTux-Origins datadir~~  
 3. ~~Sheet region crop for bulk (tiles ids + image)~~  
 4. ~~Tile selector UI (tilegroups from meta)~~  
-5. Game objects as property bags / object selector  
-6. Layer list / switch active tilemap  
+5. ~~Layer list / switch active tilemap~~  
+6. Property editor UI for selected object  
+7. Object selector palette (data-driven types, not full gameobjs.py)  
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

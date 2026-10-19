@@ -20,6 +20,7 @@
 #include "flexlay/supertux/tileset_loader.hpp"
 #include "flexlay/workspace.hpp"
 #include "flexlay/gui/tile_selector_widget.hpp"
+#include "flexlay/gui/layer_selector_widget.hpp"
 #include "flexlay/tile_brush.hpp"
 
 
@@ -90,8 +91,14 @@ int main(int argc, char* argv[])
   }
 
   auto object_layer = std::make_shared<flexlay::ObjectLayer>();
-  object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
-    flexlay::Pointf(64, 64), flexlay::Sizef(64, 48), flexlay::Color(255, 200, 50, 160)));
+  {
+    auto r = std::make_shared<flexlay::ObjMapRectObject>(
+      flexlay::Pointf(64, 64), flexlay::Sizef(64, 48), flexlay::Color(255, 200, 50, 160));
+    r->set_name("demo-rect");
+    r->properties().set("kind", std::string("rect"));
+    r->properties().set("hp", 1);
+    object_layer->add_object(r);
+  }
   object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
     flexlay::Pointf(200, 120), flexlay::Sizef(80, 80), flexlay::Color(50, 200, 255, 160)));
   object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
@@ -208,6 +215,34 @@ int main(int argc, char* argv[])
   tile_dock_layout->addWidget(tile_scroll, 1);
   tile_dock->setWidget(tile_dock_inner);
   window.addDockWidget(Qt::RightDockWidgetArea, tile_dock);
+
+
+  // Layers dock
+  auto* layer_dock = new QDockWidget(QStringLiteral("Layers"), &window);
+  layer_dock->setObjectName(QStringLiteral("layer_selector_dock"));
+  auto* layer_selector = new flexlay::LayerSelectorWidget(layer_dock);
+  layer_selector->set_map(editor_map);
+  layer_dock->setWidget(layer_selector);
+  window.addDockWidget(Qt::LeftDockWidgetArea, layer_dock);
+
+  QObject::connect(layer_selector, &flexlay::LayerSelectorWidget::tilemap_activated,
+                   [paint_tool, fill_tool, workspace, map_widget](std::shared_ptr<flexlay::TilemapLayer> tm) {
+                     paint_tool->set_tilemap(tm);
+                     fill_tool->set_tilemap(tm);
+                     workspace->set_tool(paint_tool);
+                     map_widget->update();
+                   });
+  QObject::connect(layer_selector, &flexlay::LayerSelectorWidget::object_layer_activated,
+                   [select_tool, workspace, map_widget](std::shared_ptr<flexlay::ObjectLayer> ol) {
+                     select_tool->set_object_layer(ol);
+                     workspace->set_tool(select_tool);
+                     map_widget->update();
+                   });
+  QObject::connect(layer_selector, &flexlay::LayerSelectorWidget::layer_visibility_changed,
+                   [map_widget, editor_map](int, bool) {
+                     editor_map->bump_serial();
+                     map_widget->update();
+                   });
 
   // Keep last loaded tilegroups for combo switching
   auto tilegroups = std::make_shared<std::vector<flexlay::supertux::TileGroupInfo>>();
@@ -363,6 +398,7 @@ int main(int argc, char* argv[])
       }
       *current_tileset = ts;
       tile_selector->set_tileset(ts);
+      layer_selector->set_map(new_map);
       *tilegroups = meta.tilegroups;
       group_combo->blockSignals(true);
       group_combo->clear();

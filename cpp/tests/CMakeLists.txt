@@ -33,3 +33,7 @@ add_test(NAME test_level_loader COMMAND test_level_loader)
 add_executable(test_tileset_loader test_tileset_loader.cpp)
 target_link_libraries(test_tileset_loader PRIVATE flexlay::flexlay)
 add_test(NAME test_tileset_loader COMMAND test_tileset_loader)
+
+add_executable(test_property_bag test_property_bag.cpp)
+target_link_libraries(test_property_bag PRIVATE flexlay::flexlay)
+add_test(NAME test_property_bag COMMAND test_property_bag)
