@@ -360,11 +360,18 @@ Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --bu
 - **TileFillTool**
 - simpleed: **Flood fill** tool button
 
+### 2026-10-19 — PixelBuffer / Sprite
+
+- **PixelBuffer** RGBA8 (from_size, from_color, from_file with Qt)
+- **Sprite** + **GraphicContext::draw_image** (Qt path)
+- **ObjMapSpriteObject**
+- simpleed demo checker sprite; **test_sprite**
+
 ### Concrete next steps
 
-1. ~~Scaffold through flood fill~~  
-2. Sprite objects / pixel buffer load  
-3. SuperTux + Python embed after simpleed is useful
+1. ~~Scaffold through sprites~~  
+2. SuperTux level load/save (minimal Python or pure C++)  
+3. Tile image loading from tilesets
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

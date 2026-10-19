@@ -10,6 +10,8 @@
 
 namespace flexlay {
 
+class PixelBuffer;
+
 class GraphicContext
 {
 public:
@@ -19,6 +21,12 @@ public:
   virtual void draw_rect(const Rectf& rect, const Color& color, int radius = 0) = 0;
   virtual void fill_rect(const Rectf& rect, const Color& color, int radius = 0) = 0;
   virtual void draw_line(float x1, float y1, float x2, float y2, const Color& color) = 0;
+
+  /** Draw pixel buffer at (x,y) with destination size (w,h). Default: no-op. */
+  virtual void draw_image(const PixelBuffer& /*image*/, float /*x*/, float /*y*/,
+                          float /*w*/, float /*h*/)
+  {
+  }
 
   virtual void push_modelview() = 0;
   virtual void pop_modelview() = 0;

@@ -21,3 +21,7 @@ add_test(NAME test_paint COMMAND test_paint)
 add_executable(test_objects test_objects.cpp)
 target_link_libraries(test_objects PRIVATE flexlay::flexlay)
 add_test(NAME test_objects COMMAND test_objects)
+
+add_executable(test_sprite test_sprite.cpp)
+target_link_libraries(test_sprite PRIVATE flexlay::flexlay)
+add_test(NAME test_sprite COMMAND test_sprite)

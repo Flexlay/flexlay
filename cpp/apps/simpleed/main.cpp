@@ -6,6 +6,9 @@
 #include "flexlay/editor_map_widget.hpp"
 #include "flexlay/object_layer.hpp"
 #include "flexlay/objmap_rect_object.hpp"
+#include "flexlay/objmap_sprite_object.hpp"
+#include "flexlay/pixel_buffer.hpp"
+#include "flexlay/sprite.hpp"
 #include "flexlay/tile.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/tileset.hpp"
@@ -64,6 +67,18 @@ int main(int argc, char* argv[])
     flexlay::Pointf(200, 120), flexlay::Sizef(80, 80), flexlay::Color(50, 200, 255, 160)));
   object_layer->add_object(std::make_shared<flexlay::ObjMapRectObject>(
     flexlay::Pointf(400, 200), flexlay::Sizef(96, 40), flexlay::Color(255, 80, 120, 160)));
+
+  // Demo sprites (solid pixel buffers until tile images are loaded)
+  {
+    auto pb = flexlay::PixelBuffer::from_color(flexlay::Size(48, 48), flexlay::Color(30, 144, 255, 220));
+    // checker accent
+    for (int y = 0; y < 48; ++y)
+      for (int x = 0; x < 48; ++x)
+        if (((x / 8) + (y / 8)) % 2 == 0)
+          pb.set_pixel(x, y, flexlay::Color(255, 255, 255, 220));
+    object_layer->add_object(std::make_shared<flexlay::ObjMapSpriteObject>(
+      flexlay::Sprite(std::move(pb)), flexlay::Pointf(300, 300)));
+  }
 
   auto editor_map = std::make_shared<flexlay::EditorMap>();
   editor_map->set_background_color(flexlay::Color(45, 45, 55));

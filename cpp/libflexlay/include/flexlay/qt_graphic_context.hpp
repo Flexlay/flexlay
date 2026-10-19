@@ -6,8 +6,10 @@
 #define FLEXLAY_QT_GRAPHIC_CONTEXT_HPP
 
 #include "flexlay/graphic_context.hpp"
+#include "flexlay/pixel_buffer.hpp"
 #include "flexlay/qt_compat.hpp"
 
+#include <QImage>
 #include <QLineF>
 #include <QPainter>
 #include <QPainterPath>
@@ -47,6 +49,17 @@ public:
   {
     m_painter.setPen(to_qt(color));
     m_painter.drawLine(QLineF(x1, y1, x2, y2));
+  }
+
+  void draw_image(const PixelBuffer& image, float x, float y, float w, float h) override
+  {
+    if (image.empty()) {
+      return;
+    }
+    QImage qimg(image.data().data(), image.width(), image.height(), image.width() * 4,
+                QImage::Format_RGBA8888);
+    // QImage does not own; keep buffer alive for this call only
+    m_painter.drawImage(QRectF(x, y, w, h), qimg);
   }
 
   void push_modelview() override { m_painter.save(); }

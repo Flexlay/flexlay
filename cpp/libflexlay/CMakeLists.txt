@@ -8,6 +8,9 @@ set(FLEXLAY_CORE_SOURCES
   src/editor_map.cpp
   src/object_layer.cpp
   src/objmap_rect_object.cpp
+  src/objmap_sprite_object.cpp
+  src/pixel_buffer.cpp
+  src/sprite.cpp
   src/commands/paint_command.cpp
   src/commands/object_move_command.cpp
   src/commands/object_add_command.cpp
