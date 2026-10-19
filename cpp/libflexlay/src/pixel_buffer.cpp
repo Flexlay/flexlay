@@ -62,6 +62,12 @@ PixelBuffer PixelBuffer::from_file(const std::string& filename)
 #endif
 }
 
+PixelBuffer PixelBuffer::subregion_from_file(const std::string& filename,
+                                             int x, int y, int w, int h)
+{
+  return from_file(filename).subregion(x, y, w, h);
+}
+
 Color PixelBuffer::pixel(int x, int y) const
 {
   if (x < 0 || y < 0 || x >= m_width || y >= m_height) {
@@ -81,6 +87,20 @@ void PixelBuffer::set_pixel(int x, int y, const Color& c)
   m_data[i + 1] = c.g;
   m_data[i + 2] = c.b;
   m_data[i + 3] = c.a;
+}
+
+PixelBuffer PixelBuffer::subregion(int x, int y, int w, int h) const
+{
+  if (w <= 0 || h <= 0) {
+    return PixelBuffer();
+  }
+  PixelBuffer out = from_size(Size(w, h));
+  for (int dy = 0; dy < h; ++dy) {
+    for (int dx = 0; dx < w; ++dx) {
+      out.set_pixel(dx, dy, pixel(x + dx, y + dy));
+    }
+  }
+  return out;
 }
 
 } // namespace flexlay

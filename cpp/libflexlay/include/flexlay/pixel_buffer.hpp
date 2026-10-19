@@ -25,6 +25,12 @@ public:
   static PixelBuffer from_color(const Size& size, const Color& color);
   /** Load image from path. Requires FLEXLAY_HAS_QT. Throws on failure. */
   static PixelBuffer from_file(const std::string& filename);
+  /**
+   * Load image and crop to [x, y, w, h]. Out-of-bounds areas are transparent.
+   * Requires FLEXLAY_HAS_QT.
+   */
+  static PixelBuffer subregion_from_file(const std::string& filename,
+                                         int x, int y, int w, int h);
 
   int width() const { return m_width; }
   int height() const { return m_height; }
@@ -36,6 +42,12 @@ public:
 
   Color pixel(int x, int y) const;
   void set_pixel(int x, int y, const Color& c);
+
+  /**
+   * Copy a rectangular region. Coordinates outside this buffer yield
+   * transparent pixels. Returns empty buffer if w or h is non-positive.
+   */
+  PixelBuffer subregion(int x, int y, int w, int h) const;
 
 private:
   PixelBuffer(int width, int height, std::vector<uint8_t> data);
