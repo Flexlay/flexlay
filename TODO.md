@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-48.1-worldmap-modern-sectors-5ef0589.bundle`
+**Current tip bundle:** `flexlay-49.1-tileset-path-worldmap-objs-5ef0589.bundle`
 
 ---
 
@@ -605,6 +605,12 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - **`.stwm` worldmaps**: `is_worldmap`, object x/y ×32 in editor, ÷32 on save
 - Worldmap object types: level, worldmap-spawnpoint, special-tile, sprite-change, teleporter
 - Open dialog accepts `*.stwm`
+
+### 2026-10-19 — Level tileset path + worldmap objects
+
+- `resolve_tileset_path(datadir, level.tileset_path)` — loads worldmap `.strf` / custom tilesets
+- Open Level uses the level's `(tileset …)` instead of always `tiles.stts`
+- Worldmap palette types: level, worldmap-spawnpoint, special-tile, sprite-change, teleporter
 
 ### Concrete next steps
 

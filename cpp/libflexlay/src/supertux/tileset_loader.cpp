@@ -8,10 +8,12 @@
 #include "flexlay/tile.hpp"
 #include "flexlay/util/sexpr.hpp"
 
+#include <filesystem>
 #include <fstream>
 #include <memory>
 #include <map>
 #include <sstream>
+#include <vector>
 #include <stdexcept>
 
 namespace flexlay {
@@ -389,6 +391,50 @@ load_tileset_file(const std::string& path, const TilesetLoadOptions& opts)
   auto result = load_tileset_text(ss.str(), opts);
   result.second.filename = path;
   return result;
+}
+
+
+std::string resolve_tileset_path(const std::string& datadir,
+                                 const std::string& tileset_path_from_level)
+{
+  namespace fs = std::filesystem;
+  const std::string fallback = datadir.empty() ? std::string("images/tiles.stts")
+                                               : (datadir + "/images/tiles.stts");
+  if (datadir.empty()) {
+    return tileset_path_from_level.empty() ? fallback : tileset_path_from_level;
+  }
+  auto try_path = [](const fs::path& p) -> std::string {
+    if (fs::is_regular_file(p)) {
+      return p.string();
+    }
+    return {};
+  };
+  std::string rel = tileset_path_from_level;
+  // normalize
+  while (!rel.empty() && rel[0] == '/') {
+    rel = rel.substr(1);
+  }
+  if (rel.size() >= 7 && rel.compare(0, 7, "images/") == 0) {
+    // keep as-is under datadir
+  }
+  const std::vector<fs::path> candidates = {
+    fs::path(datadir) / rel,
+    fs::path(datadir) / "images" / fs::path(rel).filename(),
+    fs::path(datadir) / rel.substr(rel.find("images/") == 0 ? 7 : 0),
+  };
+  for (const auto& c : candidates) {
+    if (auto s = try_path(c); !s.empty()) {
+      return s;
+    }
+  }
+  // extension swap .strf <-> try common defaults
+  if (!rel.empty()) {
+    fs::path p = fs::path(datadir) / "images" / fs::path(rel).filename();
+    if (auto s = try_path(p); !s.empty()) {
+      return s;
+    }
+  }
+  return fallback;
 }
 
 } // namespace supertux

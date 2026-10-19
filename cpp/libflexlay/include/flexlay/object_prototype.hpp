@@ -273,6 +273,16 @@ inline std::vector<ObjectPrototype> default_object_prototypes()
   add("zeekling", "Zeekling", Sizef(32, 32), Color(180, 120, 120, 200), "",
       [](PropertyBag&) {});
 
+  add("level", "Level (worldmap)", Sizef(32, 32), Color(80, 200, 80, 200), "",
+      [](PropertyBag& d) { d.set("level", std::string("")); });
+  add("worldmap-spawnpoint", "Worldmap spawn", Sizef(32, 32), Color(80, 120, 220, 200), "",
+      [](PropertyBag& d) { d.set("name", std::string("main")); });
+  add("special-tile", "Special tile", Sizef(32, 32), Color(200, 80, 200, 160), "",
+      [](PropertyBag&) {});
+  add("sprite-change", "Sprite change", Sizef(32, 32), Color(180, 180, 80, 200), "",
+      [](PropertyBag&) {});
+  add("teleporter", "Teleporter", Sizef(32, 32), Color(100, 100, 200, 200), "",
+      [](PropertyBag&) {});
   return out;
 }
 

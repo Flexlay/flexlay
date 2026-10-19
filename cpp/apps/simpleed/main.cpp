@@ -847,7 +847,13 @@ int main(int argc, char* argv[])
       flexlay::supertux::LoadedTilesetMeta meta;
       int image_tiles = 0;
       if (!supertux_datadir->empty()) {
-        const std::string stts = *supertux_datadir + "/images/tiles.stts";
+        const std::string stts = flexlay::supertux::resolve_tileset_path(
+          *supertux_datadir, level.tileset_path);
+        if (options.verbose) {
+          std::cerr << "[flexlay] tileset file: " << stts
+                    << (level.tileset_path.empty() ? " (default)" : " (from level)")
+                    << "\n";
+        }
         flexlay::supertux::TilesetLoadOptions opts;
         opts.datadir = *supertux_datadir;
         opts.tile_size = tile_size;

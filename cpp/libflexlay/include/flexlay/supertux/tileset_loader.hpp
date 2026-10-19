@@ -54,6 +54,13 @@ load_tileset_text(const std::string& text, const TilesetLoadOptions& opts = {});
 std::pair<std::shared_ptr<Tileset>, LoadedTilesetMeta>
 load_tileset_file(const std::string& path, const TilesetLoadOptions& opts = {});
 
+/**
+ * Resolve tileset file under datadir from level (tileset "...") path.
+ * Tries absolute under datadir, strips leading /, images/ prefix, falls back to images/tiles.stts.
+ */
+std::string resolve_tileset_path(const std::string& datadir,
+                                const std::string& tileset_path_from_level);
+
 } // namespace supertux
 } // namespace flexlay
 
