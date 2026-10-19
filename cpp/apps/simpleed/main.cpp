@@ -31,6 +31,8 @@
 
 
 #include <QApplication>
+#include <QFile>
+#include <QIcon>
 #include <QCoreApplication>
 #include <QDir>
 #include <QAction>
@@ -181,6 +183,35 @@ void log_startup(const CliOptions& opt)
   }
 }
 
+QString flexlay_data_dir()
+{
+  if (const char* env = std::getenv("FLEXLAY_DATADIR")) {
+    if (env[0] != '\0') {
+      return QString::fromUtf8(env);
+    }
+  }
+  const char* candidates[] = {
+    "data", "./data", "../data", "../../data",
+  };
+  for (const char* c : candidates) {
+    if (QFile::exists(QString::fromUtf8(c) + QStringLiteral("/images/icons24/stock_open.png"))) {
+      return QString::fromUtf8(c);
+    }
+  }
+  return {};
+}
+
+void set_action_icon(QAction* act, const QString& data_dir, const QString& rel)
+{
+  if (!act || data_dir.isEmpty()) {
+    return;
+  }
+  const QString path = data_dir + QLatin1Char('/') + rel;
+  if (QFile::exists(path)) {
+    act->setIcon(QIcon(path));
+  }
+}
+
 } // namespace
 
 int main(int argc, char* argv[])
@@ -326,24 +357,46 @@ int main(int argc, char* argv[])
   auto* tool_group = new QActionGroup(&window);
   tool_group->setExclusive(true);
 
+  const QString flex_data = flexlay_data_dir();
+  if (!flex_data.isEmpty() && options.verbose) {
+    std::cout << "flexlay data: " << flex_data.toStdString() << "\n";
+  }
+
+  // File ops (connected later to same handlers as menu)
+  auto* tb_new = toolbar->addAction(QStringLiteral("New"));
+  auto* tb_open = toolbar->addAction(QStringLiteral("Open"));
+  auto* tb_save = toolbar->addAction(QStringLiteral("Save"));
+  set_action_icon(tb_new, flex_data, QStringLiteral("images/icons24/stock_new.png"));
+  set_action_icon(tb_open, flex_data, QStringLiteral("images/icons24/stock_open.png"));
+  set_action_icon(tb_save, flex_data, QStringLiteral("images/icons24/stock_save.png"));
+  toolbar->addSeparator();
+  auto* tb_undo = toolbar->addAction(QStringLiteral("Undo"));
+  auto* tb_redo = toolbar->addAction(QStringLiteral("Redo"));
+  set_action_icon(tb_undo, flex_data, QStringLiteral("images/icons24/stock_undo.png"));
+  set_action_icon(tb_redo, flex_data, QStringLiteral("images/icons24/stock_redo.png"));
+  toolbar->addSeparator();
+
   auto* paint_act = toolbar->addAction(QStringLiteral("Paint"));
   paint_act->setCheckable(true);
   paint_act->setChecked(true);
   paint_act->setShortcut(QKeySequence(QStringLiteral("P")));
   paint_act->setToolTip(QStringLiteral("Paint tiles (P)"));
   tool_group->addAction(paint_act);
+  set_action_icon(paint_act, flex_data, QStringLiteral("images/tools/stock-tool-tiles-24.png"));
 
   auto* fill_act = toolbar->addAction(QStringLiteral("Fill"));
   fill_act->setCheckable(true);
   fill_act->setShortcut(QKeySequence(QStringLiteral("F")));
   fill_act->setToolTip(QStringLiteral("Flood fill (F)"));
   tool_group->addAction(fill_act);
+  set_action_icon(fill_act, flex_data, QStringLiteral("images/tools/stock-tool-fill-24.png"));
 
   auto* select_act = toolbar->addAction(QStringLiteral("Objects"));
   select_act->setCheckable(true);
   select_act->setShortcut(QKeySequence(QStringLiteral("O")));
   select_act->setToolTip(QStringLiteral("Select / move objects (O)"));
   tool_group->addAction(select_act);
+  set_action_icon(select_act, flex_data, QStringLiteral("images/tools/stock-tool-move-22.png"));
 
   toolbar->addSeparator();
   auto* grid_act = toolbar->addAction(QStringLiteral("Grid"));
@@ -355,6 +408,7 @@ int main(int argc, char* argv[])
   grid_act->setChecked(true);
   grid_act->setShortcut(QKeySequence(QStringLiteral("G")));
   grid_act->setToolTip(QStringLiteral("Toggle tile grid (G)"));
+  set_action_icon(grid_act, flex_data, QStringLiteral("images/icons24/grid.png"));
 
   toolbar->addSeparator();
   auto* zoom_in_act = toolbar->addAction(QStringLiteral("Zoom+"));
@@ -363,6 +417,29 @@ int main(int argc, char* argv[])
   auto* zoom_fit_act = toolbar->addAction(QStringLiteral("Fit"));
   zoom_1_act->setToolTip(QStringLiteral("Zoom 100%"));
   zoom_fit_act->setToolTip(QStringLiteral("Zoom to fit level"));
+  set_action_icon(zoom_in_act, flex_data, QStringLiteral("images/icons24/stock_zoom_in.png"));
+  set_action_icon(zoom_out_act, flex_data, QStringLiteral("images/icons24/stock_zoom_out.png"));
+  set_action_icon(zoom_1_act, flex_data, QStringLiteral("images/icons24/stock_zoom_1.png"));
+  set_action_icon(zoom_fit_act, flex_data, QStringLiteral("images/icons24/stock_zoom_fit.png"));
+
+  toolbar->addSeparator();
+  auto* tb_lower_bot = toolbar->addAction(QStringLiteral("Bottom"));
+  auto* tb_lower = toolbar->addAction(QStringLiteral("Lower"));
+  auto* tb_raise = toolbar->addAction(QStringLiteral("Raise"));
+  auto* tb_raise_top = toolbar->addAction(QStringLiteral("Top"));
+  tb_lower_bot->setToolTip(QStringLiteral("Object to bottom"));
+  tb_lower->setToolTip(QStringLiteral("Lower object"));
+  tb_raise->setToolTip(QStringLiteral("Raise object"));
+  tb_raise_top->setToolTip(QStringLiteral("Object to top"));
+  set_action_icon(tb_lower_bot, flex_data, QStringLiteral("images/icons24/object_lower_to_bottom.png"));
+  set_action_icon(tb_lower, flex_data, QStringLiteral("images/icons24/object_lower.png"));
+  set_action_icon(tb_raise, flex_data, QStringLiteral("images/icons24/object_raise.png"));
+  set_action_icon(tb_raise_top, flex_data, QStringLiteral("images/icons24/object_raise_to_top.png"));
+
+  toolbar->addSeparator();
+  auto* tb_run = toolbar->addAction(QStringLiteral("Run"));
+  tb_run->setToolTip(QStringLiteral("Run level in SuperTux (F5)"));
+  set_action_icon(tb_run, flex_data, QStringLiteral("images/icons24/run.png"));
 
   toolbar->addSeparator();
   for (int sz : {1, 2, 3, 5}) {
@@ -1405,6 +1482,18 @@ int main(int argc, char* argv[])
     window.setWindowTitle(
       QStringLiteral("SuperTux Editor — %1").arg(QString::fromStdString(*last_level_name)));
   });
+
+
+  QObject::connect(tb_undo, &QAction::triggered, undo_act, &QAction::trigger);
+  QObject::connect(tb_redo, &QAction::triggered, redo_act, &QAction::trigger);
+  QObject::connect(tb_raise, &QAction::triggered, raise_act, &QAction::trigger);
+  QObject::connect(tb_lower, &QAction::triggered, lower_act, &QAction::trigger);
+  QObject::connect(tb_raise_top, &QAction::triggered, raise_top_act, &QAction::trigger);
+  QObject::connect(tb_lower_bot, &QAction::triggered, lower_bot_act, &QAction::trigger);
+  QObject::connect(tb_new, &QAction::triggered, new_act, &QAction::trigger);
+  QObject::connect(tb_open, &QAction::triggered, open_act, &QAction::trigger);
+  QObject::connect(tb_save, &QAction::triggered, save_overwrite_act, &QAction::trigger);
+  QObject::connect(tb_run, &QAction::triggered, run_act, &QAction::trigger);
 
   auto* help_menu = window.menuBar()->addMenu(QStringLiteral("&Help"));
   auto* about_act = help_menu->addAction(QStringLiteral("About"));

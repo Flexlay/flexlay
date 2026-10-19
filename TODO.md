@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-44.1-save-dup-nudge-5ef0589.bundle`
+**Current tip bundle:** `flexlay-45.1-toolbar-icons-5ef0589.bundle`
 
 ---
 
@@ -579,6 +579,12 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - **File → Save** (Ctrl+S) overwrites last opened/saved path; falls back to Save As
 - **Edit → Duplicate** / **Ctrl+D** clones selection (+32,+32)
 - Arrow keys nudge selection (1px; **Shift** = 32px tile step)
+
+### 2026-10-19 — Toolbar icons (Python parity)
+
+- Load icons from `FLEXLAY_DATADIR` or `./data` (`images/icons24`, `images/tools`)
+- Toolbar: New/Open/Save, Undo/Redo, Paint/Fill/Objects, Grid, Zoom, Raise/Lower, Run
+- Actions share menu handlers
 
 ### Concrete next steps
 
