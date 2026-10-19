@@ -115,6 +115,42 @@ inline std::vector<ObjectPrototype> default_object_prototypes()
   add("infoblock", "Info block", Sizef(32, 32), Color(100, 180, 255, 200), "",
       [](PropertyBag& d) { d.set("message", std::string("")); });
 
+  add("bouncingsnowball", "Bouncing snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("captainsnowball", "Captain snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("flyingsnowball", "Flying snowball", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mriceblock", "Mr. Iceblock", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mrbomb", "Mr. Bomb", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mrtree", "Mr. Tree", Sizef(64, 64), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("crystallo", "Crystallo", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("fish", "Fish", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("mole", "Mole", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("igel", "Igel", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("haywire", "Haywire", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("icecrusher", "Ice crusher", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("kugelblitz", "Kugelblitz", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("angrystone", "Angry stone", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("goldbomb", "Gold bomb", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("lantern", "Lantern", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("magicblock", "Magic block", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
+  add("ispy", "Ispy", Sizef(32, 32), Color(180, 120, 120, 200), "",
+      [](PropertyBag&) {});
   return out;
 }
 

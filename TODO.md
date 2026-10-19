@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-39.1-new-resize-run-5ef0589.bundle`
+**Current tip bundle:** `flexlay-40.1-sectors-badguys-5ef0589.bundle`
 
 ---
 
@@ -546,6 +546,14 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - **Edit → Run Level… (F5)**: save temp .stlv, launch SuperTux binary (path in QSettings)
 - **Datadir persistence** via QSettings when not overridden by CLI/env
 - `TilemapLayer::resize` wraps `Field::resize`
+
+### 2026-10-19 — Sector menu + more object types
+
+- **Sector → Create New Sector…** (30×20 layers + spawn, unique name)
+- **Sector → Remove Current Sector** (keeps at least one)
+- **Sector → Sector Properties…** (name, gravity, ambient RGB)
+- **File → Level Properties…** (name, author, license, contact, tileset, target time)
+- Object palette expanded with common badguys (iceblock, bomb, crystallo, fish, …)
 
 ### Concrete next steps
 

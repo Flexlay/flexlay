@@ -53,6 +53,9 @@
 #include <QDockWidget>
 #include <QScrollArea>
 #include <QSettings>
+#include <QInputDialog>
+#include <QDoubleSpinBox>
+#include <QLineEdit>
 #include <QProcess>
 #include <QSpinBox>
 #include <QFormLayout>
@@ -1059,6 +1062,249 @@ int main(int argc, char* argv[])
   add_zoom(QStringLiteral("4:1 (400%)"), 4.0f);
   view_menu->addSeparator();
   view_menu->addAction(zoom_fit_act);
+
+
+  auto* sector_menu = window.menuBar()->addMenu(QStringLiteral("&Sector"));
+
+  auto refresh_sector_combo = [sector_combo, last_level_meta]() {
+    sector_combo->blockSignals(true);
+    sector_combo->clear();
+    for (const auto& sn : last_level_meta->sector_names()) {
+      sector_combo->addItem(QString::fromStdString(sn));
+    }
+    sector_combo->setCurrentIndex(static_cast<int>(last_level_meta->active_sector));
+    sector_combo->setEnabled(last_level_meta->sectors.size() > 1);
+    sector_combo->blockSignals(false);
+  };
+
+  auto apply_active_sector = [&, workspace, map_widget, paint_tool, fill_tool, select_tool,
+                              place_tool, layer_selector, props_widget, current_tileset,
+                              paint_act, grid_act, sector_combo, minimap]() {
+    auto ts = *current_tileset;
+    if (!ts) {
+      ts = std::make_shared<flexlay::Tileset>(32);
+    }
+    auto new_map = flexlay::supertux::editor_map_from_level(*last_level_meta, ts, *supertux_datadir);
+    workspace->set_map(new_map);
+    std::shared_ptr<flexlay::TilemapLayer> solid;
+    std::shared_ptr<flexlay::TilemapLayer> any_tm;
+    for (const auto& layer : new_map->layers()) {
+      if (auto tml = std::dynamic_pointer_cast<flexlay::TilemapLayer>(layer)) {
+        if (!any_tm) any_tm = tml;
+        if (tml->get_name().find("[solid]") != std::string::npos) {
+          solid = tml;
+        }
+      }
+      if (auto ol = std::dynamic_pointer_cast<flexlay::ObjectLayer>(layer)) {
+        select_tool->set_object_layer(ol);
+        place_tool->set_object_layer(ol);
+      }
+    }
+    auto target = solid ? solid : any_tm;
+    if (target) {
+      paint_tool->set_tilemap(target);
+      fill_tool->set_tilemap(target);
+    }
+    layer_selector->set_map(new_map);
+    props_widget->clear();
+    paint_act->setChecked(true);
+    workspace->set_tool(paint_tool);
+    grid_act->setChecked(new_map->draw_grid());
+    sector_combo->blockSignals(true);
+    sector_combo->clear();
+    for (const auto& sn : last_level_meta->sector_names()) {
+      sector_combo->addItem(QString::fromStdString(sn));
+    }
+    sector_combo->setCurrentIndex(static_cast<int>(last_level_meta->active_sector));
+    sector_combo->setEnabled(last_level_meta->sectors.size() > 1);
+    sector_combo->blockSignals(false);
+    map_widget->update();
+    if (minimap) {
+      minimap->update();
+    }
+  };
+
+  auto persist_active_sector = [workspace, last_level_name, last_level_meta]() {
+    if (auto map = workspace->get_map()) {
+      const std::string prev = last_level_meta->sector_name();
+      *last_level_meta = flexlay::supertux::level_from_editor_map(
+        *map, *last_level_name, prev.empty() ? "main" : prev,
+        last_level_meta->version > 0 ? last_level_meta->version : 4,
+        last_level_meta.get());
+    }
+  };
+
+  auto* sector_new_act = sector_menu->addAction(QStringLiteral("Create New Sector…"));
+  QObject::connect(sector_new_act, &QAction::triggered, [&, apply_active_sector, persist_active_sector]() {
+    persist_active_sector();
+    bool ok = false;
+    QString name = QInputDialog::getText(
+      &window, QStringLiteral("New Sector"), QStringLiteral("Sector name:"),
+      QLineEdit::Normal, QStringLiteral("sector"), &ok);
+    if (!ok || name.trimmed().isEmpty()) {
+      return;
+    }
+    std::string uniq = name.trimmed().toStdString();
+    // uniquify
+    {
+      int i = 2;
+      const std::string base = uniq;
+      while (true) {
+        bool clash = false;
+        for (const auto& s : last_level_meta->sectors) {
+          if (s.name == uniq) {
+            clash = true;
+            break;
+          }
+        }
+        if (!clash) break;
+        uniq = base + "<" + std::to_string(i++) + ">";
+      }
+    }
+    flexlay::supertux::LoadedSector sec;
+    sec.name = uniq;
+    // minimal empty tilemaps like Python new_from_size(30,20)
+    auto empty_tm = [](const char* n, bool solid, int z) {
+      flexlay::supertux::LoadedTilemap tm;
+      tm.name = n;
+      tm.solid = solid;
+      tm.z_pos = z;
+      tm.width = 30;
+      tm.height = 20;
+      tm.tiles.assign(static_cast<size_t>(30 * 20), 0);
+      return tm;
+    };
+    sec.tilemaps.push_back(empty_tm("background", false, -100));
+    sec.tilemaps.push_back(empty_tm("interactive", true, 0));
+    sec.tilemaps.push_back(empty_tm("foreground", false, 100));
+    flexlay::supertux::LoadedObject spawn;
+    spawn.type = "spawnpoint";
+    spawn.x = 5 * 32;
+    spawn.y = 15 * 32;
+    spawn.width = 32;
+    spawn.height = 32;
+    spawn.props.set("name", std::string("main"));
+    sec.objects.push_back(std::move(spawn));
+    last_level_meta->sectors.push_back(std::move(sec));
+    last_level_meta->active_sector = last_level_meta->sectors.size() - 1;
+    apply_active_sector();
+    window.statusBar()->showMessage(
+      QStringLiteral("Created sector \"%1\"").arg(QString::fromStdString(uniq)));
+  });
+
+  auto* sector_rm_act = sector_menu->addAction(QStringLiteral("Remove Current Sector"));
+  QObject::connect(sector_rm_act, &QAction::triggered, [&, apply_active_sector, persist_active_sector]() {
+    if (last_level_meta->sectors.size() <= 1) {
+      QMessageBox::warning(&window, QStringLiteral("Remove Sector"),
+                           QStringLiteral("Cannot remove the only sector."));
+      return;
+    }
+    persist_active_sector();
+    const QString name = QString::fromStdString(last_level_meta->sector_name());
+    if (QMessageBox::question(&window, QStringLiteral("Remove Sector"),
+                              QStringLiteral("Remove sector \"%1\"?").arg(name))
+        != QMessageBox::Yes) {
+      return;
+    }
+    last_level_meta->sectors.erase(
+      last_level_meta->sectors.begin() + static_cast<std::ptrdiff_t>(last_level_meta->active_sector));
+    if (last_level_meta->active_sector >= last_level_meta->sectors.size()) {
+      last_level_meta->active_sector = last_level_meta->sectors.size() - 1;
+    }
+    apply_active_sector();
+    window.statusBar()->showMessage(QStringLiteral("Removed sector \"%1\"").arg(name));
+  });
+
+  auto* sector_props_act = sector_menu->addAction(QStringLiteral("Sector Properties…"));
+  QObject::connect(sector_props_act, &QAction::triggered, [&, persist_active_sector, apply_active_sector]() {
+    persist_active_sector();
+    auto* sec = last_level_meta->active();
+    if (!sec) {
+      return;
+    }
+    QDialog dlg(&window);
+    dlg.setWindowTitle(QStringLiteral("Sector Properties"));
+    auto* form = new QFormLayout(&dlg);
+    auto* name_edit = new QLineEdit(QString::fromStdString(sec->name), &dlg);
+    auto* grav = new QDoubleSpinBox(&dlg);
+    grav->setRange(-100, 100);
+    grav->setDecimals(2);
+    grav->setValue(sec->gravity);
+    auto* ar = new QDoubleSpinBox(&dlg);
+    ar->setRange(0, 1);
+    ar->setSingleStep(0.05);
+    ar->setValue(sec->ambient_r);
+    auto* ag = new QDoubleSpinBox(&dlg);
+    ag->setRange(0, 1);
+    ag->setSingleStep(0.05);
+    ag->setValue(sec->ambient_g);
+    auto* ab = new QDoubleSpinBox(&dlg);
+    ab->setRange(0, 1);
+    ab->setSingleStep(0.05);
+    ab->setValue(sec->ambient_b);
+    form->addRow(QStringLiteral("Name:"), name_edit);
+    form->addRow(QStringLiteral("Gravity:"), grav);
+    form->addRow(QStringLiteral("Ambient R:"), ar);
+    form->addRow(QStringLiteral("Ambient G:"), ag);
+    form->addRow(QStringLiteral("Ambient B:"), ab);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    form->addRow(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) {
+      return;
+    }
+    const std::string new_name = name_edit->text().trimmed().toStdString();
+    if (!new_name.empty()) {
+      sec->name = new_name;
+    }
+    sec->gravity = static_cast<float>(grav->value());
+    sec->has_gravity = true;
+    sec->ambient_r = static_cast<float>(ar->value());
+    sec->ambient_g = static_cast<float>(ag->value());
+    sec->ambient_b = static_cast<float>(ab->value());
+    sec->has_ambient_light = true;
+    apply_active_sector();
+    window.statusBar()->showMessage(QStringLiteral("Updated sector properties"));
+  });
+
+  // Level properties (File menu parity with Python)
+  auto* level_props_act = file_menu->addAction(QStringLiteral("Level Properties…"));
+  QObject::connect(level_props_act, &QAction::triggered, [&]() {
+    QDialog dlg(&window);
+    dlg.setWindowTitle(QStringLiteral("Level Properties"));
+    auto* form = new QFormLayout(&dlg);
+    auto* name_edit = new QLineEdit(QString::fromStdString(last_level_meta->name), &dlg);
+    auto* author_edit = new QLineEdit(QString::fromStdString(last_level_meta->author), &dlg);
+    auto* license_edit = new QLineEdit(QString::fromStdString(last_level_meta->license), &dlg);
+    auto* contact_edit = new QLineEdit(QString::fromStdString(last_level_meta->contact), &dlg);
+    auto* tileset_edit = new QLineEdit(QString::fromStdString(last_level_meta->tileset_path), &dlg);
+    auto* time_spin = new QSpinBox(&dlg);
+    time_spin->setRange(0, 99999);
+    time_spin->setValue(last_level_meta->target_time);
+    form->addRow(QStringLiteral("Name:"), name_edit);
+    form->addRow(QStringLiteral("Author:"), author_edit);
+    form->addRow(QStringLiteral("License:"), license_edit);
+    form->addRow(QStringLiteral("Contact:"), contact_edit);
+    form->addRow(QStringLiteral("Tileset:"), tileset_edit);
+    form->addRow(QStringLiteral("Target time:"), time_spin);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    form->addRow(buttons);
+    QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    if (dlg.exec() != QDialog::Accepted) {
+      return;
+    }
+    last_level_meta->name = name_edit->text().toStdString();
+    last_level_meta->author = author_edit->text().toStdString();
+    last_level_meta->license = license_edit->text().toStdString();
+    last_level_meta->contact = contact_edit->text().toStdString();
+    last_level_meta->tileset_path = tileset_edit->text().toStdString();
+    last_level_meta->target_time = time_spin->value();
+    *last_level_name = last_level_meta->name.empty() ? "unnamed" : last_level_meta->name;
+    window.setWindowTitle(
+      QStringLiteral("SuperTux Editor — %1").arg(QString::fromStdString(*last_level_name)));
+  });
 
   auto* help_menu = window.menuBar()->addMenu(QStringLiteral("&Help"));
   auto* about_act = help_menu->addAction(QStringLiteral("About"));
