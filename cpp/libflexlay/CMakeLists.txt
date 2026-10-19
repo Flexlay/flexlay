@@ -6,6 +6,8 @@ set(FLEXLAY_CORE_SOURCES
   src/field.cpp
   src/tilemap_layer.cpp
   src/editor_map.cpp
+  src/commands/paint_command.cpp
+  src/tools/tile_paint_tool.cpp
 )
 
 add_library(flexlay STATIC ${FLEXLAY_CORE_SOURCES})

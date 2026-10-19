@@ -7,11 +7,17 @@
 #include "flexlay/tile.hpp"
 #include "flexlay/tilemap_layer.hpp"
 #include "flexlay/tileset.hpp"
+#include "flexlay/tools/tile_paint_tool.hpp"
 #include "flexlay/workspace.hpp"
 
 #include <QApplication>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMainWindow>
+#include <QPushButton>
 #include <QStatusBar>
+#include <QVBoxLayout>
+#include <QWidget>
 
 #include <memory>
 #include <random>
@@ -41,9 +47,7 @@ int main(int argc, char* argv[])
   for (int y = 0; y < map_h; ++y) {
     for (int x = 0; x < map_w; ++x) {
       int id = dist(rng);
-      if ((x + y) % 7 == 0) {
-        id = 0;
-      }
+      if ((x + y) % 7 == 0) id = 0;
       tilemap->field().put(x, y, static_cast<uint32_t>(id));
     }
   }
@@ -54,23 +58,58 @@ int main(int argc, char* argv[])
     0, 0, static_cast<float>(map_w * tile_size), static_cast<float>(map_h * tile_size)));
   editor_map->add_layer(tilemap);
 
+  auto paint_tool = std::make_shared<flexlay::TilePaintTool>();
+  paint_tool->set_tilemap(tilemap);
+  paint_tool->set_tile_id(1);
+
   auto workspace = std::make_shared<flexlay::Workspace>();
   workspace->set_map(editor_map);
+  workspace->set_tool(paint_tool);
   workspace->state().set_size(960, 600);
   workspace->state().set_pos(flexlay::Pointf(static_cast<float>(map_w * tile_size) / 2.0f,
                                              static_cast<float>(map_h * tile_size) / 2.0f));
-  workspace->state().set_zoom(1.0f);
 
   QMainWindow window;
   window.setWindowTitle(QStringLiteral("Flexlay Simple Editor (C++)"));
-  auto* map_widget = new flexlay::EditorMapWidget(&window);
-  map_widget->set_workspace(workspace);
-  window.setCentralWidget(map_widget);
-  window.statusBar()->showMessage(
-    QStringLiteral("Middle-drag: pan  |  Wheel: zoom  |  %1x%2 tiles @ %3px")
-      .arg(map_w).arg(map_h).arg(tile_size));
-  window.resize(960, 640);
-  window.show();
 
+  auto* central = new QWidget(&window);
+  auto* layout = new QHBoxLayout(central);
+  auto* sidebar = new QWidget(central);
+  auto* side_layout = new QVBoxLayout(sidebar);
+  side_layout->addWidget(new QLabel(QStringLiteral("Tile:"), sidebar));
+
+  auto make_tile_btn = [&](uint32_t id, const QString& label, const QColor& color) {
+    auto* btn = new QPushButton(label, sidebar);
+    btn->setStyleSheet(QStringLiteral("background-color: %1; min-height: 28px;").arg(color.name()));
+    QObject::connect(btn, &QPushButton::clicked, [paint_tool, id]() { paint_tool->set_tile_id(id); });
+    side_layout->addWidget(btn);
+  };
+  make_tile_btn(0, QStringLiteral("0 Erase"), QColor(40, 40, 40));
+  make_tile_btn(1, QStringLiteral("1 Blue"), QColor(70, 130, 180));
+  make_tile_btn(2, QStringLiteral("2 Green"), QColor(60, 179, 113));
+  make_tile_btn(3, QStringLiteral("3 Red"), QColor(205, 92, 92));
+  make_tile_btn(4, QStringLiteral("4 Yellow"), QColor(238, 221, 130));
+  make_tile_btn(5, QStringLiteral("5 Purple"), QColor(147, 112, 219));
+  side_layout->addStretch(1);
+
+  auto* map_widget = new flexlay::EditorMapWidget(central);
+  map_widget->set_workspace(workspace);
+  layout->addWidget(sidebar, 0);
+  layout->addWidget(map_widget, 1);
+  window.setCentralWidget(central);
+
+  auto update_status = [&]() {
+    window.statusBar()->showMessage(
+      QStringLiteral("LMB paint | MMB pan | Wheel zoom | Ctrl+Z/Y undo/redo | tile=%1 | undo=%2 redo=%3")
+        .arg(paint_tool->tile_id())
+        .arg(editor_map->undo_stack_size())
+        .arg(editor_map->redo_stack_size()));
+  };
+  QObject::connect(map_widget, &flexlay::EditorMapWidget::map_changed, update_status);
+  update_status();
+
+  window.resize(1100, 640);
+  window.show();
+  map_widget->setFocus();
   return app.exec();
 }

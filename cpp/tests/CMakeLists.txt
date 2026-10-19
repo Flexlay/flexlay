@@ -13,3 +13,7 @@ add_test(NAME test_field COMMAND test_field)
 add_executable(test_tilemap test_tilemap.cpp)
 target_link_libraries(test_tilemap PRIVATE flexlay::flexlay)
 add_test(NAME test_tilemap COMMAND test_tilemap)
+
+add_executable(test_paint test_paint.cpp)
+target_link_libraries(test_paint PRIVATE flexlay::flexlay)
+add_test(NAME test_paint COMMAND test_paint)

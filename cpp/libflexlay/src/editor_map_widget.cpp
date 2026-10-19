@@ -3,11 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "flexlay/editor_map_widget.hpp"
-
 #include "flexlay/qt_graphic_context.hpp"
 
 #include <algorithm>
 
+#include <QKeyEvent>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QWheelEvent>
@@ -32,17 +32,24 @@ void EditorMapWidget::set_workspace(std::shared_ptr<Workspace> workspace)
   update();
 }
 
+Pointf EditorMapWidget::world_pos_from_event(const QPointF& pos) const
+{
+  if (!m_workspace) {
+    return Pointf(0, 0);
+  }
+  return m_workspace->state().screen2world(
+    Pointf(static_cast<float>(pos.x()), static_cast<float>(pos.y())));
+}
+
 void EditorMapWidget::paintEvent(QPaintEvent*)
 {
   QPainter painter(this);
   painter.fillRect(rect(), QColor(32, 32, 40));
-
   if (!m_workspace || !m_workspace->get_map()) {
     painter.setPen(QColor(180, 180, 180));
     painter.drawText(rect(), Qt::AlignCenter, tr("No map loaded"));
     return;
   }
-
   painter.setRenderHint(QPainter::Antialiasing, false);
   QtGraphicContext gc(painter);
   m_workspace->draw(gc);
@@ -65,6 +72,17 @@ void EditorMapWidget::mousePressEvent(QMouseEvent* event)
     event->accept();
     return;
   }
+  if (m_workspace && m_workspace->tool()) {
+    const int button = (event->button() == Qt::LeftButton) ? 1
+                       : (event->button() == Qt::RightButton) ? 2 : 0;
+    if (button) {
+      m_workspace->tool()->on_mouse_down(*m_workspace, world_pos_from_event(event->position()), button);
+      update();
+      emit map_changed();
+      event->accept();
+      return;
+    }
+  }
   QWidget::mousePressEvent(event);
 }
 
@@ -82,6 +100,18 @@ void EditorMapWidget::mouseMoveEvent(QMouseEvent* event)
     event->accept();
     return;
   }
+  if (m_workspace && m_workspace->tool()) {
+    int buttons = 0;
+    if (event->buttons() & Qt::LeftButton) buttons |= 1;
+    if (event->buttons() & Qt::RightButton) buttons |= 2;
+    m_workspace->tool()->on_mouse_move(*m_workspace, world_pos_from_event(event->position()), buttons);
+    if (buttons) {
+      update();
+      emit map_changed();
+    }
+    event->accept();
+    return;
+  }
   QWidget::mouseMoveEvent(event);
 }
 
@@ -93,6 +123,17 @@ void EditorMapWidget::mouseReleaseEvent(QMouseEvent* event)
     event->accept();
     return;
   }
+  if (m_workspace && m_workspace->tool()) {
+    const int button = (event->button() == Qt::LeftButton) ? 1
+                       : (event->button() == Qt::RightButton) ? 2 : 0;
+    if (button) {
+      m_workspace->tool()->on_mouse_up(*m_workspace, world_pos_from_event(event->position()), button);
+      update();
+      emit map_changed();
+      event->accept();
+      return;
+    }
+  }
   QWidget::mouseReleaseEvent(event);
 }
 
@@ -102,21 +143,44 @@ void EditorMapWidget::wheelEvent(QWheelEvent* event)
     QWidget::wheelEvent(event);
     return;
   }
-
   const QPoint num_degrees = event->angleDelta();
   if (num_degrees.y() == 0) {
     QWidget::wheelEvent(event);
     return;
   }
-
   const float factor = num_degrees.y() > 0 ? 1.1f : (1.0f / 1.1f);
-  const float old_zoom = m_workspace->state().get_zoom();
-  const float new_zoom = std::clamp(old_zoom * factor, 0.1f, 16.0f);
-  const Pointf screen(static_cast<float>(event->position().x()),
-                      static_cast<float>(event->position().y()));
-  m_workspace->state().set_zoom(new_zoom, screen);
+  const float new_zoom = std::clamp(m_workspace->state().get_zoom() * factor, 0.1f, 16.0f);
+  m_workspace->state().set_zoom(new_zoom, Pointf(static_cast<float>(event->position().x()),
+                                                   static_cast<float>(event->position().y())));
   update();
   event->accept();
+}
+
+void EditorMapWidget::keyPressEvent(QKeyEvent* event)
+{
+  if (!m_workspace || !m_workspace->map()) {
+    QWidget::keyPressEvent(event);
+    return;
+  }
+  const bool ctrl = event->modifiers() & Qt::ControlModifier;
+  if (ctrl && event->key() == Qt::Key_Z) {
+    if (event->modifiers() & Qt::ShiftModifier)
+      m_workspace->map()->redo();
+    else
+      m_workspace->map()->undo();
+    update();
+    emit map_changed();
+    event->accept();
+    return;
+  }
+  if (ctrl && event->key() == Qt::Key_Y) {
+    m_workspace->map()->redo();
+    update();
+    emit map_changed();
+    event->accept();
+    return;
+  }
+  QWidget::keyPressEvent(event);
 }
 
 } // namespace flexlay

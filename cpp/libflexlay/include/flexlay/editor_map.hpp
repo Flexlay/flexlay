@@ -6,6 +6,7 @@
 #define FLEXLAY_EDITOR_MAP_HPP
 
 #include "flexlay/color.hpp"
+#include "flexlay/commands/command.hpp"
 #include "flexlay/graphic_context.hpp"
 #include "flexlay/layer.hpp"
 #include "flexlay/math/rect.hpp"
@@ -46,6 +47,12 @@ public:
   bool is_modified() const { return m_modified; }
   void set_modified(bool m) { m_modified = m; }
 
+  void execute(CommandPtr command);
+  void undo();
+  void redo();
+  int undo_stack_size() const { return static_cast<int>(m_undo_stack.size()); }
+  int redo_stack_size() const { return static_cast<int>(m_redo_stack.size()); }
+
 private:
   Color m_background_color{100, 80, 100};
   bool m_modified = false;
@@ -54,6 +61,8 @@ private:
   Rectf m_bounding_rect;
   std::vector<std::shared_ptr<Layer>> m_layers;
   bool m_draw_grid = false;
+  std::vector<CommandPtr> m_undo_stack;
+  std::vector<CommandPtr> m_redo_stack;
 };
 
 } // namespace flexlay

@@ -24,6 +24,9 @@ public:
 
   QSize sizeHint() const override { return QSize(960, 600); }
 
+signals:
+  void map_changed();
+
 protected:
   void paintEvent(QPaintEvent* event) override;
   void resizeEvent(QResizeEvent* event) override;
@@ -31,8 +34,11 @@ protected:
   void mouseMoveEvent(QMouseEvent* event) override;
   void mouseReleaseEvent(QMouseEvent* event) override;
   void wheelEvent(QWheelEvent* event) override;
+  void keyPressEvent(QKeyEvent* event) override;
 
 private:
+  Pointf world_pos_from_event(const QPointF& pos) const;
+
   std::shared_ptr<Workspace> m_workspace;
   bool m_panning = false;
   QPoint m_last_mouse;

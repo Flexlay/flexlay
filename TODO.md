@@ -289,14 +289,22 @@ Added `cpp/`: math, Color, Field, qt_compat, scaffold (see prior tip).
 
 Tests (no Qt): `cmake -S cpp -B build -DFLEXLAY_BUILD_SIMPLEED=OFF && cmake --build build && ctest --test-dir build`
 
+### 2026-10-19 — Paint tool + undo
+
+- **Command** base + **PaintCommand** (per-cell old/new ids, stroke)
+- **EditorMap** undo/redo stacks (`execute` / `undo` / `redo`)
+- **Tool** + **TilePaintTool** (LMB drag paint)
+- **EditorMapWidget** routes mouse to tool; Ctrl+Z/Y undo/redo
+- **simpleed** tile palette sidebar
+- **test_paint** green
+
 ### Concrete next steps
 
-1. ~~Scaffold, math, Color, Field~~  
-2. ~~GraphicContext, TilemapLayer, map widget, simpleed view~~  
-3. **Paint tool** (left-click place tile)  
-4. **Command / undo stack**  
-5. Object layer (rects)  
-6. SuperTux + Python embed after simpleed edits maps
+1. ~~Scaffold through tilemap view~~  
+2. ~~Paint + undo/redo~~  
+3. Object layer (rects) + select/move  
+4. Tile brushes (multi-tile)  
+5. SuperTux + Python embed after simpleed is useful
 
 Do **not** start by embedding Python or rewriting `gameobjs.py`.
 

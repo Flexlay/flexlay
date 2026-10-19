@@ -29,28 +29,60 @@ void EditorMap::draw(GraphicContext& gc) const
   if (m_has_bounding_rect) {
     gc.fill_rect(m_bounding_rect, m_background_color);
   }
-
   for (const auto& layer : m_layers) {
     layer->draw(gc);
   }
-
   if (m_draw_grid && m_has_bounding_rect) {
     const Color grid(255, 255, 255, 30);
     const int tile = 32;
     const Rect clip = gc.get_clip_rect().to_i();
-    const int start_x = clip.left / tile;
-    const int start_y = clip.top / tile;
-    const int end_x = clip.right / tile + 1;
-    const int end_y = clip.bottom / tile + 1;
-    for (int x = start_x; x <= end_x; ++x) {
+    for (int x = clip.left / tile; x <= clip.right / tile + 1; ++x) {
       const float gx = static_cast<float>(x * tile);
       gc.draw_line(gx, m_bounding_rect.top, gx, m_bounding_rect.bottom, grid);
     }
-    for (int y = start_y; y <= end_y; ++y) {
+    for (int y = clip.top / tile; y <= clip.bottom / tile + 1; ++y) {
       const float gy = static_cast<float>(y * tile);
       gc.draw_line(m_bounding_rect.left, gy, m_bounding_rect.right, gy, grid);
     }
   }
+}
+
+void EditorMap::execute(CommandPtr command)
+{
+  if (!command) {
+    return;
+  }
+  m_redo_stack.clear();
+  command->execute();
+  m_undo_stack.push_back(std::move(command));
+  m_modified = true;
+  ++m_serial;
+}
+
+void EditorMap::undo()
+{
+  if (m_undo_stack.empty()) {
+    return;
+  }
+  CommandPtr command = m_undo_stack.back();
+  m_undo_stack.pop_back();
+  command->undo();
+  m_redo_stack.push_back(std::move(command));
+  m_modified = true;
+  ++m_serial;
+}
+
+void EditorMap::redo()
+{
+  if (m_redo_stack.empty()) {
+    return;
+  }
+  CommandPtr command = m_redo_stack.back();
+  m_redo_stack.pop_back();
+  command->redo();
+  m_undo_stack.push_back(std::move(command));
+  m_modified = true;
+  ++m_serial;
 }
 
 } // namespace flexlay
