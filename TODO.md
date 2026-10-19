@@ -3,7 +3,7 @@
 **Status:** C++ simpleed has tile paint/fill/objects + SuperTux level/tileset load with real images.  
 **Base commit (work line):** `5ef0589` (`5ef0589431456887a372c8e27df9d5d5af68c52f`)  
 **Branch tip:** see `git log -1`.  
-**Current tip bundle:** `flexlay-47.1-schemas-animation-5ef0589.bundle`
+**Current tip bundle:** `flexlay-48.1-worldmap-modern-sectors-5ef0589.bundle`
 
 ---
 
@@ -597,6 +597,14 @@ run-level, sector resize, property dialogs per type, worldmap, …
 - Property schemas regenerated from Python `gameobjs.py` (~32 types)
 - Multi-frame `.sprite` objects animate in the map view (~30 Hz)
 - **View → Animate Sprites** toggle (default on)
+
+### 2026-10-19 — Worldmap + modern sector format
+
+- Load **modern SuperTux** levels: `(sector …)` as root children (not only nested `(sectors)`)
+- Sector children without `(objects)` wrapper (worldmap / mainline)
+- **`.stwm` worldmaps**: `is_worldmap`, object x/y ×32 in editor, ÷32 on save
+- Worldmap object types: level, worldmap-spawnpoint, special-tile, sprite-change, teleporter
+- Open dialog accepts `*.stwm`
 
 ### Concrete next steps
 

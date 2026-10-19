@@ -77,6 +77,62 @@ int main()
   }
   CHECK(found_objects);
 
+  // Modern SuperTux: sector as root child, no (objects) wrapper
+  auto modern = supertux::load_level_text(R"(
+    (supertux-level
+      (version 3)
+      (name "Modern")
+      (tileset "/images/tiles.strf")
+      (sector
+        (name "main")
+        (tilemap
+          (solid #t)
+          (width 2)
+          (height 1)
+          (tiles 1 2)
+        )
+        (spawnpoint (name "main") (x 10) (y 20))
+      )
+    )
+  )");
+  CHECK(modern.sectors.size() == 1);
+  CHECK(modern.tilemaps().size() == 1);
+  CHECK(modern.objects().size() == 1);
+  CHECK(modern.objects()[0].type == "spawnpoint");
+
+  // Worldmap-style objects (tile coords); is_worldmap scales in editor_map_from_level
+  auto wm = supertux::load_level_text(R"(
+    (supertux-level
+      (version 3)
+      (name "WM")
+      (sector
+        (name "main")
+        (tilemap (width 4) (height 4) (tiles 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))
+        (level (level "a.stl") (x 3) (y 5))
+        (worldmap-spawnpoint (name "main") (x 1) (y 2))
+      )
+    )
+  )");
+  wm.is_worldmap = true;
+  CHECK(wm.objects().size() == 2);
+  auto wmap = supertux::editor_map_from_level(wm, tileset);
+  found_objects = false;
+  for (const auto& layer : wmap->layers()) {
+    if (auto ol = std::dynamic_pointer_cast<ObjectLayer>(layer)) {
+      found_objects = true;
+      CHECK(ol->objects().size() == 2);
+      // tile coords * 32
+      bool saw_scaled = false;
+      for (const auto& o : ol->objects()) {
+        if (o->get_pos().x == 96.0f && o->get_pos().y == 160.0f) {
+          saw_scaled = true;
+        }
+      }
+      CHECK(saw_scaled);
+    }
+  }
+  CHECK(found_objects);
+
   std::cout << "test_level_loader: ok\n";
   return 0;
 }

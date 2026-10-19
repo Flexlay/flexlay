@@ -233,6 +233,7 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
     level.contact = meta->contact;
     level.tileset_path = meta->tileset_path;
     level.target_time = meta->target_time;
+    level.is_worldmap = meta->is_worldmap;
     level.sectors = meta->sectors;
     level.active_sector = meta->active_sector;
   }
@@ -279,8 +280,10 @@ LoadedLevel level_from_editor_map(const EditorMap& map, const std::string& name,
         if (auto type = obj->properties().get_as<std::string>("type")) {
           lo.type = *type;
         }
-        lo.x = obj->get_pos().x;
-        lo.y = obj->get_pos().y;
+        // Worldmap stores tile coordinates in the file
+        const float inv = level.is_worldmap ? (1.0f / 32.0f) : 1.0f;
+        lo.x = obj->get_pos().x * inv;
+        lo.y = obj->get_pos().y * inv;
         lo.width = 32;
         lo.height = 32;
         if (auto* rect = dynamic_cast<ObjMapRectObject*>(obj.get())) {

@@ -22,6 +22,21 @@ const Schema& empty_schema()
 const std::unordered_map<std::string, Schema>& all_schemas()
 {
     static const std::unordered_map<std::string, Schema> map = {
+    {"level", {
+      {"level", "Level file", std::string("")},
+      {"name", "Name", std::string("")},
+      {"extro-script", "Extro script", std::string("")},
+    }},
+    {"worldmap-spawnpoint", {
+      {"name", "Name", std::string("main")},
+    }},
+    {"special-tile", {
+      {"script", "Script", std::string("")},
+      {"map-message", "Map message", std::string("")},
+    }},
+    {"sprite-change", {
+      {"sprite", "Sprite", std::string("")},
+    }},
     {"ambient_sound", {
       {"distance_factor", "Distance Factor", 0.0f},
       {"distance_bias", "Distance Bias", 0.0f},

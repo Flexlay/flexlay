@@ -110,7 +110,8 @@ bool is_skipped_object_tag(const std::string& tag)
 {
   static const std::unordered_set<std::string> skip = {
     "tilemap", "camera", "ambient-light", "gravity", "music", "init-script",
-    "background", "gradient", "thunderstorm", "particles-*" // not exact
+    "background", "gradient", "thunderstorm", "particles-*",
+    "name", "objects", "width", "height"
   };
   if (skip.count(tag)) {
     return true;
@@ -273,30 +274,52 @@ LoadedLevel load_level_text(const std::string& text)
   level.tileset_path = child_atom(root, "tileset");
   level.target_time = child_int(root, "target-time", 0);
 
-  const SExpr* sectors = find_child(root, "sectors");
-  if (!sectors) {
-    return level;
-  }
-  for (size_t i = 1; i < sectors->as_list().size(); ++i) {
-    const auto& sector_node = sectors->as_list()[i];
-    if (!sector_node.is_list() || sector_node.tag() != "sector") {
-      continue;
-    }
-    LoadedSector sector;
-    sector.name = child_atom(sector_node, "name", "main");
+  auto finalize_sector = [](LoadedSector& sector) {
     if (sector.name.empty()) {
       sector.name = "main";
-    }
-    const SExpr* objects = find_child(sector_node, "objects");
-    if (objects) {
-      collect_objects(*objects, sector);
     }
     std::stable_sort(sector.tilemaps.begin(), sector.tilemaps.end(),
                      [](const LoadedTilemap& a, const LoadedTilemap& b) {
                        return a.z_pos < b.z_pos;
                      });
+  };
+
+  auto parse_one_sector = [&](const SExpr& sector_node) {
+    LoadedSector sector;
+    sector.name = child_atom(sector_node, "name", "main");
+    // Classic: (objects (tilemap ...) ...)
+    const SExpr* objects = find_child(sector_node, "objects");
+    if (objects) {
+      collect_objects(*objects, sector);
+    } else {
+      // Modern SuperTux / worldmap: tilemaps & objects are direct sector children
+      collect_objects(sector_node, sector);
+    }
+    finalize_sector(sector);
     level.sectors.push_back(std::move(sector));
+  };
+
+  // Nested (sectors (sector ...)) form (tests / older packs)
+  const SExpr* sectors = find_child(root, "sectors");
+  if (sectors && sectors->is_list()) {
+    for (size_t i = 1; i < sectors->as_list().size(); ++i) {
+      const auto& sector_node = sectors->as_list()[i];
+      if (sector_node.is_list() && sector_node.tag() == "sector") {
+        parse_one_sector(sector_node);
+      }
+    }
   }
+
+  // Modern: (sector ...) direct children of root
+  if (root.is_list()) {
+    for (size_t i = 1; i < root.as_list().size(); ++i) {
+      const auto& child = root.as_list()[i];
+      if (child.is_list() && child.tag() == "sector") {
+        parse_one_sector(child);
+      }
+    }
+  }
+
   level.active_sector = 0;
   return level;
 }
@@ -309,7 +332,12 @@ LoadedLevel load_level_file(const std::string& path)
   }
   std::ostringstream ss;
   ss << in.rdbuf();
-  return load_level_text(ss.str());
+  LoadedLevel level = load_level_text(ss.str());
+  // Worldmap files use tile-grid coordinates for objects
+  if (path.size() >= 5 && path.compare(path.size() - 5, 5, ".stwm") == 0) {
+    level.is_worldmap = true;
+  }
+  return level;
 }
 
 std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
@@ -355,9 +383,10 @@ std::shared_ptr<EditorMap> editor_map_from_level(const LoadedLevel& level,
 
   auto object_layer = std::make_shared<ObjectLayer>();
   object_layer->set_name("objects");
+  const float pos_scale = level.is_worldmap ? 32.0f : 1.0f;
   for (const auto& lo : sector->objects) {
-    auto obj = make_editor_object(lo.type, Pointf(lo.x, lo.y), lo.width, lo.height,
-                                  lo.props, datadir);
+    auto obj = make_editor_object(lo.type, Pointf(lo.x * pos_scale, lo.y * pos_scale),
+                                  lo.width, lo.height, lo.props, datadir);
     object_layer->add_object(obj);
   }
   map->add_layer(object_layer);

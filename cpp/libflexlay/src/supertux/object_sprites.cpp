@@ -118,6 +118,11 @@ const std::unordered_map<std::string, ObjectVisualInfo>& visual_table()
     {"yeti", {"creatures/yeti/yeti.png", Sizef(32, 32)}},
     {"yeti_stalactite", {"engine/editor/stalactite_yeti.png", Sizef(32, 32)}},
     {"zeekling", {"creatures/zeekling/left-0.png", Sizef(32, 32)}},
+    {"level", {"worldmap/common/leveldot.sprite", Sizef(32, 32)}},
+    {"worldmap-spawnpoint", {"worldmap/common/tux.sprite", Sizef(32, 32)}},
+    {"special-tile", {"engine/editor/secretarea.png", Sizef(32, 32)}},
+    {"sprite-change", {"worldmap/common/leveldot.sprite", Sizef(32, 32)}},
+    {"teleporter", {"worldmap/common/teleporterdown.sprite", Sizef(32, 32)}},
   };
 
 return table;

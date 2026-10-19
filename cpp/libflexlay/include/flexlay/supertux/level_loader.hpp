@@ -69,6 +69,8 @@ struct LoadedLevel
   std::vector<LoadedSector> sectors;
   /** Index into sectors for the sector currently shown in the editor. */
   size_t active_sector = 0;
+  /** True when loaded from .stwm or marked as worldmap. */
+  bool is_worldmap = false;
 
   // --- convenience views of the active sector (legacy / UI helpers) ---
   std::string sector_name() const

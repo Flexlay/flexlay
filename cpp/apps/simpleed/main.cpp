@@ -832,7 +832,7 @@ int main(int argc, char* argv[])
     if (path.isEmpty()) {
       path = QFileDialog::getOpenFileName(
         &window, QStringLiteral("Open SuperTux Level"),
-        QString(), QStringLiteral("SuperTux levels (*.stlv *.stl);;All (*)"));
+        QString(), QStringLiteral("SuperTux levels (*.stlv *.stl *.stwm);;All (*)"));
     }
     if (path.isEmpty()) {
       return;
@@ -1517,7 +1517,7 @@ int main(int argc, char* argv[])
     const QString path = QFileDialog::getSaveFileName(
       &window, QStringLiteral("Save SuperTux Level"),
       QString::fromStdString(*last_level_name + ".stlv"),
-      QStringLiteral("SuperTux levels (*.stlv *.stl);;All (*)"));
+      QStringLiteral("SuperTux levels (*.stlv *.stl *.stwm);;All (*)"));
     if (path.isEmpty()) {
       return;
     }
